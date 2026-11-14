@@ -41,6 +41,17 @@ export default function GuildDashboard() {
     usernameColor: '#ff5c8a',
     subtitleColor: '#d1d5db',
     overlayOpacity: 0.55,
+    // 🔽 Nuevas opciones de sombras
+    shadowTitle: true,
+    shadowTitleIntensity: 0.7,
+    shadowUsername: true,
+    shadowUsernameIntensity: 0.7,
+    shadowSubtitle: true,
+    shadowSubtitleIntensity: 0.6,
+    shadowAvatar: true,
+    shadowAvatarIntensity: 0.5,
+    shadowCard: true,
+    shadowCardIntensity: 0.4,
   });
 
   useEffect(() => {
@@ -48,7 +59,7 @@ export default function GuildDashboard() {
     fetch(`/api/bot/api/guilds/${guildId}/welcome`)
       .then((res) => res.json())
       .then((data) => {
-        if (data.config) setConfig(data.config);
+        if (data.config) setConfig((prev) => ({ ...prev, ...data.config }));
         if (data.channels) setChannels(data.channels);
         setGuildInfo({
           name: data.guildName || 'Servidor',
@@ -72,6 +83,37 @@ export default function GuildDashboard() {
     if (!guildInfo.icon) return null;
     const ext = guildInfo.icon.startsWith('a_') ? 'gif' : 'png';
     return `https://cdn.discordapp.com/icons/${guildId}/${guildInfo.icon}.${ext}?size=128`;
+  };
+
+  // 🔽 Helpers de sombras dinámicas
+  const getTitleShadow = () => {
+    if (!config.shadowTitle) return 'none';
+    const i = config.shadowTitleIntensity;
+    return `0 2px 4px rgba(0,0,0,${i}), 0 4px 12px rgba(0,0,0,${i * 0.7}), 0 0 24px rgba(0,0,0,${i * 0.5})`;
+  };
+
+  const getUsernameShadow = () => {
+    if (!config.shadowUsername) return 'none';
+    const i = config.shadowUsernameIntensity;
+    return `0 2px 4px rgba(0,0,0,${i}), 0 4px 10px rgba(0,0,0,${i * 0.7})`;
+  };
+
+  const getSubtitleShadow = () => {
+    if (!config.shadowSubtitle) return 'none';
+    const i = config.shadowSubtitleIntensity;
+    return `0 1px 3px rgba(0,0,0,${i}), 0 2px 8px rgba(0,0,0,${i * 0.7})`;
+  };
+
+  const getAvatarShadow = () => {
+    if (!config.shadowAvatar) return 'none';
+    const i = config.shadowAvatarIntensity;
+    return `0 6px 20px rgba(0,0,0,${i}), 0 0 24px ${config.borderColor}${Math.round(i * 100).toString(16).padStart(2, '0')}`;
+  };
+
+  const getCardShadow = () => {
+    if (!config.shadowCard) return 'none';
+    const i = config.shadowCardIntensity;
+    return `0 12px 32px rgba(0,0,0,${i}), 0 4px 12px rgba(0,0,0,${i * 0.7}), inset 0 1px 0 rgba(255,255,255,0.05)`;
   };
 
   const handleSave = async () => {
@@ -621,7 +663,7 @@ export default function GuildDashboard() {
                     {formatPreviewText(config.message)}
                   </p>
 
-                  {/* TARJETA ESTILO KOYA con sombras de texto mejoradas */}
+                  {/* TARJETA ESTILO KOYA con sombras personalizables */}
                   <div
                     className={poppins.className}
                     style={{
@@ -641,8 +683,7 @@ export default function GuildDashboard() {
                       backgroundImage: config.bgImage ? `url(${config.bgImage})` : 'none',
                       backgroundSize: 'cover',
                       backgroundPosition: 'center',
-                      boxShadow:
-                        '0 12px 32px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.05)',
+                      boxShadow: getCardShadow(),
                       border: '1px solid rgba(255,255,255,0.08)',
                     }}
                   >
@@ -677,10 +718,10 @@ export default function GuildDashboard() {
                           marginBottom: 10,
                           border: `3px solid ${config.borderColor}`,
                           background: '#2b2d31',
-                          boxShadow: `0 6px 20px rgba(0,0,0,0.5), 0 0 24px ${config.borderColor}40`,
+                          boxShadow: getAvatarShadow(),
                         }}
                       />
-                      {/* TÍTULO con triple sombra para máxima legibilidad */}
+                      {/* TÍTULO */}
                       <h4
                         className={poppins.className}
                         style={{
@@ -692,13 +733,12 @@ export default function GuildDashboard() {
                           margin: 0,
                           lineHeight: 1.15,
                           wordBreak: 'break-word',
-                          textShadow:
-                            '0 2px 4px rgba(0,0,0,0.7), 0 4px 12px rgba(0,0,0,0.5), 0 0 24px rgba(0,0,0,0.4)',
+                          textShadow: getTitleShadow(),
                         }}
                       >
                         {formatPreviewText(config.cardTitle)}
                       </h4>
-                      {/* USERNAME con sombra media */}
+                      {/* USERNAME */}
                       <p
                         className={poppins.className}
                         style={{
@@ -707,13 +747,12 @@ export default function GuildDashboard() {
                           marginTop: 4,
                           color: config.usernameColor,
                           wordBreak: 'break-word',
-                          textShadow:
-                            '0 2px 4px rgba(0,0,0,0.7), 0 4px 10px rgba(0,0,0,0.45)',
+                          textShadow: getUsernameShadow(),
                         }}
                       >
                         {session?.user?.name || 'Usuario#0000'}
                       </p>
-                      {/* SUBTÍTULO con sombra sutil */}
+                      {/* SUBTÍTULO */}
                       <p
                         className={inter.className}
                         style={{
@@ -723,7 +762,7 @@ export default function GuildDashboard() {
                           color: config.subtitleColor,
                           wordBreak: 'break-word',
                           opacity: 0.95,
-                          textShadow: '0 1px 3px rgba(0,0,0,0.6), 0 2px 8px rgba(0,0,0,0.4)',
+                          textShadow: getSubtitleShadow(),
                         }}
                       >
                         {formatPreviewText(config.cardSubtitle)}
@@ -760,10 +799,7 @@ export default function GuildDashboard() {
               <select
                 value={config.channelId}
                 onChange={(e) => setConfig({ ...config, channelId: e.target.value })}
-                style={{
-                  fontSize: 16,
-                  boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.3)',
-                }}
+                style={{ fontSize: 16, boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.3)' }}
               >
                 <option value="">Selecciona un canal...</option>
                 {channels.map((ch) => (
@@ -936,6 +972,116 @@ export default function GuildDashboard() {
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+
+        {/* ===== SECCIÓN DE SOMBRAS PERSONALIZABLES ===== */}
+        <div className="card" style={{ marginTop: 20, boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
+          <h3
+            style={{
+              fontSize: 14,
+              fontWeight: 600,
+              marginBottom: 20,
+              textShadow: '0 1px 3px rgba(0,0,0,0.3)',
+            }}
+          >
+            🌑 Sombras Personalizables
+          </h3>
+
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))',
+              gap: 16,
+            }}
+          >
+            {[
+              { label: 'Sombra del Título', toggleKey: 'shadowTitle', intensityKey: 'shadowTitleIntensity' },
+              { label: 'Sombra del Username', toggleKey: 'shadowUsername', intensityKey: 'shadowUsernameIntensity' },
+              { label: 'Sombra del Subtítulo', toggleKey: 'shadowSubtitle', intensityKey: 'shadowSubtitleIntensity' },
+              { label: 'Sombra del Avatar', toggleKey: 'shadowAvatar', intensityKey: 'shadowAvatarIntensity' },
+              { label: 'Sombra de la Tarjeta', toggleKey: 'shadowCard', intensityKey: 'shadowCardIntensity' },
+            ].map(({ label, toggleKey, intensityKey }) => (
+              <div
+                key={toggleKey}
+                style={{
+                  background: 'var(--bg)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 10,
+                  padding: 12,
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    marginBottom: 10,
+                  }}
+                >
+                  <span style={{ fontSize: 12, fontWeight: 600 }}>{label}</span>
+                  <label
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      cursor: 'pointer',
+                      WebkitTapHighlightColor: 'transparent',
+                      margin: 0,
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={config[toggleKey]}
+                      onChange={(e) => setConfig({ ...config, [toggleKey]: e.target.checked })}
+                      style={{
+                        appearance: 'none',
+                        WebkitAppearance: 'none',
+                        width: 38,
+                        height: 22,
+                        borderRadius: 999,
+                        background: config[toggleKey] ? 'var(--primary)' : 'var(--border)',
+                        position: 'relative',
+                        cursor: 'pointer',
+                        transition: 'background 0.2s',
+                        margin: 0,
+                        outline: 'none',
+                      }}
+                    />
+                  </label>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.05"
+                    value={config[intensityKey]}
+                    disabled={!config[toggleKey]}
+                    onChange={(e) =>
+                      setConfig({ ...config, [intensityKey]: parseFloat(e.target.value) })
+                    }
+                    style={{
+                      flex: 1,
+                      padding: 0,
+                      accentColor: 'var(--primary)',
+                      opacity: config[toggleKey] ? 1 : 0.4,
+                      minHeight: 28,
+                    }}
+                  />
+                  <span
+                    style={{
+                      fontSize: 11,
+                      fontFamily: 'monospace',
+                      color: 'var(--muted)',
+                      minWidth: 36,
+                      textAlign: 'right',
+                    }}
+                  >
+                    {Math.round(config[intensityKey] * 100)}%
+                  </span>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
