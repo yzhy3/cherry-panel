@@ -6,7 +6,7 @@ export const authOptions = {
     DiscordProvider({
       clientId: process.env.DISCORD_CLIENT_ID,
       clientSecret: process.env.DISCORD_CLIENT_SECRET,
-      issuer: "https://discord.com", // <-- Agrega esta línea obligatoria
+      issuer: "https://discord.com",
     }),
   ],
   secret: process.env.NEXTAUTH_SECRET,
