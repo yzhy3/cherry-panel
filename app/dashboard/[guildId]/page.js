@@ -164,7 +164,6 @@ export default function GuildDashboard() {
         position: 'relative',
       }}
     >
-      {/* OVERLAY MÓVIL */}
       {sidebarOpen && (
         <div
           onClick={() => setSidebarOpen(false)}
@@ -201,6 +200,7 @@ export default function GuildDashboard() {
           zIndex: 50,
           overflowY: 'auto',
           WebkitOverflowScrolling: 'touch',
+          boxShadow: '4px 0 24px rgba(0,0,0,0.4)',
         }}
       >
         <div>
@@ -291,6 +291,7 @@ export default function GuildDashboard() {
                 fontWeight: 600,
                 fontSize: 14,
                 cursor: 'pointer',
+                boxShadow: '0 2px 8px rgba(255,105,180,0.15)',
               }}
             >
               <span>👋</span>
@@ -365,6 +366,7 @@ export default function GuildDashboard() {
               padding: 0,
               flexShrink: 0,
               WebkitTapHighlightColor: 'transparent',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
             }}
           >
             ☰
@@ -396,6 +398,7 @@ export default function GuildDashboard() {
               fontWeight: 700,
               flexShrink: 0,
               overflow: 'hidden',
+              boxShadow: '0 4px 12px rgba(255,105,180,0.3)',
             }}
           >
             {session?.user?.image ? (
@@ -424,7 +427,12 @@ export default function GuildDashboard() {
           <div style={{ minWidth: 0 }}>
             <h1
               className={poppins.className}
-              style={{ fontSize: 'clamp(20px, 4vw, 24px)', fontWeight: 700, marginBottom: 4 }}
+              style={{
+                fontSize: 'clamp(20px, 4vw, 24px)',
+                fontWeight: 700,
+                marginBottom: 4,
+                textShadow: '0 2px 8px rgba(0,0,0,0.3)',
+              }}
             >
               👋 Sistema de Bienvenida
             </h1>
@@ -445,6 +453,7 @@ export default function GuildDashboard() {
               padding: '10px 16px',
               margin: 0,
               WebkitTapHighlightColor: 'transparent',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
             }}
           >
             <span style={{ fontSize: 12, fontWeight: 600 }}>
@@ -473,6 +482,9 @@ export default function GuildDashboard() {
                   borderRadius: 999,
                   background: config.enabled ? 'var(--primary)' : 'var(--border)',
                   transition: 'background 0.2s',
+                  boxShadow: config.enabled
+                    ? '0 0 12px rgba(255,105,180,0.5)'
+                    : 'inset 0 1px 2px rgba(0,0,0,0.3)',
                 }}
               />
               <div
@@ -485,7 +497,7 @@ export default function GuildDashboard() {
                   borderRadius: '50%',
                   background: '#fff',
                   transition: 'left 0.2s',
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+                  boxShadow: '0 2px 6px rgba(0,0,0,0.35)',
                 }}
               />
             </div>
@@ -493,7 +505,15 @@ export default function GuildDashboard() {
         </div>
 
         {/* VISTA PREVIA */}
-        <div className="card" style={{ padding: 0, overflow: 'hidden', marginBottom: 20 }}>
+        <div
+          className="card"
+          style={{
+            padding: 0,
+            overflow: 'hidden',
+            marginBottom: 20,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+          }}
+        >
           <div
             style={{
               display: 'flex',
@@ -519,6 +539,7 @@ export default function GuildDashboard() {
                 opacity: testing ? 0.6 : 1,
                 minHeight: 40,
                 WebkitTapHighlightColor: 'transparent',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
               }}
             >
               {testing ? 'Enviando...' : '🚀 Probar en Discord'}
@@ -526,7 +547,14 @@ export default function GuildDashboard() {
           </div>
 
           <div style={{ padding: 12, background: 'rgba(0,0,0,0.25)' }}>
-            <div style={{ background: '#313338', borderRadius: 12, padding: 12 }}>
+            <div
+              style={{
+                background: '#313338',
+                borderRadius: 12,
+                padding: 12,
+                boxShadow: 'inset 0 1px 4px rgba(0,0,0,0.4)',
+              }}
+            >
               <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                 <div
                   style={{
@@ -542,6 +570,7 @@ export default function GuildDashboard() {
                     fontSize: 13,
                     flexShrink: 0,
                     overflow: 'hidden',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
                   }}
                 >
                   {getGuildIconUrl() ? (
@@ -556,7 +585,16 @@ export default function GuildDashboard() {
                 </div>
                 <div style={{ minWidth: 0, flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontWeight: 700, color: '#fff', fontSize: 13 }}>Cherry</span>
+                    <span
+                      style={{
+                        fontWeight: 700,
+                        color: '#fff',
+                        fontSize: 13,
+                        textShadow: '0 1px 3px rgba(0,0,0,0.4)',
+                      }}
+                    >
+                      Cherry
+                    </span>
                     <span
                       style={{
                         background: '#5865f2',
@@ -565,6 +603,7 @@ export default function GuildDashboard() {
                         padding: '2px 6px',
                         borderRadius: 4,
                         color: '#fff',
+                        boxShadow: '0 1px 4px rgba(88,101,242,0.5)',
                       }}
                     >
                       BOT
@@ -576,12 +615,13 @@ export default function GuildDashboard() {
                       color: '#e0e0e0',
                       margin: '4px 0 0',
                       wordBreak: 'break-word',
+                      textShadow: '0 1px 2px rgba(0,0,0,0.3)',
                     }}
                   >
                     {formatPreviewText(config.message)}
                   </p>
 
-                  {/* TARJETA ESTILO KOYA */}
+                  {/* TARJETA ESTILO KOYA con sombras de texto mejoradas */}
                   <div
                     className={poppins.className}
                     style={{
@@ -601,7 +641,8 @@ export default function GuildDashboard() {
                       backgroundImage: config.bgImage ? `url(${config.bgImage})` : 'none',
                       backgroundSize: 'cover',
                       backgroundPosition: 'center',
-                      boxShadow: '0 12px 32px rgba(0,0,0,0.4)',
+                      boxShadow:
+                        '0 12px 32px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.05)',
                       border: '1px solid rgba(255,255,255,0.08)',
                     }}
                   >
@@ -636,8 +677,10 @@ export default function GuildDashboard() {
                           marginBottom: 10,
                           border: `3px solid ${config.borderColor}`,
                           background: '#2b2d31',
+                          boxShadow: `0 6px 20px rgba(0,0,0,0.5), 0 0 24px ${config.borderColor}40`,
                         }}
                       />
+                      {/* TÍTULO con triple sombra para máxima legibilidad */}
                       <h4
                         className={poppins.className}
                         style={{
@@ -649,11 +692,13 @@ export default function GuildDashboard() {
                           margin: 0,
                           lineHeight: 1.15,
                           wordBreak: 'break-word',
-                          textShadow: '0 2px 10px rgba(0,0,0,0.55)',
+                          textShadow:
+                            '0 2px 4px rgba(0,0,0,0.7), 0 4px 12px rgba(0,0,0,0.5), 0 0 24px rgba(0,0,0,0.4)',
                         }}
                       >
                         {formatPreviewText(config.cardTitle)}
                       </h4>
+                      {/* USERNAME con sombra media */}
                       <p
                         className={poppins.className}
                         style={{
@@ -662,11 +707,13 @@ export default function GuildDashboard() {
                           marginTop: 4,
                           color: config.usernameColor,
                           wordBreak: 'break-word',
-                          textShadow: '0 1px 6px rgba(0,0,0,0.55)',
+                          textShadow:
+                            '0 2px 4px rgba(0,0,0,0.7), 0 4px 10px rgba(0,0,0,0.45)',
                         }}
                       >
                         {session?.user?.name || 'Usuario#0000'}
                       </p>
+                      {/* SUBTÍTULO con sombra sutil */}
                       <p
                         className={inter.className}
                         style={{
@@ -676,6 +723,7 @@ export default function GuildDashboard() {
                           color: config.subtitleColor,
                           wordBreak: 'break-word',
                           opacity: 0.95,
+                          textShadow: '0 1px 3px rgba(0,0,0,0.6), 0 2px 8px rgba(0,0,0,0.4)',
                         }}
                       >
                         {formatPreviewText(config.cardSubtitle)}
@@ -696,8 +744,15 @@ export default function GuildDashboard() {
             gap: 16,
           }}
         >
-          <div className="card">
-            <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 20 }}>
+          <div className="card" style={{ boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
+            <h3
+              style={{
+                fontSize: 14,
+                fontWeight: 600,
+                marginBottom: 20,
+                textShadow: '0 1px 3px rgba(0,0,0,0.3)',
+              }}
+            >
               💬 Canal y Mensajes
             </h3>
             <div className="form-group">
@@ -705,7 +760,10 @@ export default function GuildDashboard() {
               <select
                 value={config.channelId}
                 onChange={(e) => setConfig({ ...config, channelId: e.target.value })}
-                style={{ fontSize: 16 }}
+                style={{
+                  fontSize: 16,
+                  boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.3)',
+                }}
               >
                 <option value="">Selecciona un canal...</option>
                 {channels.map((ch) => (
@@ -721,7 +779,11 @@ export default function GuildDashboard() {
                 rows={2}
                 value={config.message}
                 onChange={(e) => setConfig({ ...config, message: e.target.value })}
-                style={{ resize: 'none', fontSize: 16 }}
+                style={{
+                  resize: 'none',
+                  fontSize: 16,
+                  boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.3)',
+                }}
               />
               <span
                 style={{
@@ -740,7 +802,7 @@ export default function GuildDashboard() {
                 type="text"
                 value={config.cardTitle}
                 onChange={(e) => setConfig({ ...config, cardTitle: e.target.value })}
-                style={{ fontSize: 16 }}
+                style={{ fontSize: 16, boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.3)' }}
               />
             </div>
             <div className="form-group" style={{ marginBottom: 0 }}>
@@ -749,13 +811,20 @@ export default function GuildDashboard() {
                 type="text"
                 value={config.cardSubtitle}
                 onChange={(e) => setConfig({ ...config, cardSubtitle: e.target.value })}
-                style={{ fontSize: 16 }}
+                style={{ fontSize: 16, boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.3)' }}
               />
             </div>
           </div>
 
-          <div className="card">
-            <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 20 }}>
+          <div className="card" style={{ boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
+            <h3
+              style={{
+                fontSize: 14,
+                fontWeight: 600,
+                marginBottom: 20,
+                textShadow: '0 1px 3px rgba(0,0,0,0.3)',
+              }}
+            >
               🎨 Diseño de la Tarjeta
             </h3>
             <div className="form-group">
@@ -765,7 +834,7 @@ export default function GuildDashboard() {
                 placeholder="https://i.imgur.com/..."
                 value={config.bgImage}
                 onChange={(e) => setConfig({ ...config, bgImage: e.target.value })}
-                style={{ fontSize: 16 }}
+                style={{ fontSize: 16, boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.3)' }}
               />
             </div>
             <div className="form-group">
@@ -774,7 +843,12 @@ export default function GuildDashboard() {
               >
                 <label style={{ marginBottom: 0 }}>Oscuridad del fondo</label>
                 <span
-                  style={{ fontSize: 12, color: 'var(--primary)', fontWeight: 600 }}
+                  style={{
+                    fontSize: 12,
+                    color: 'var(--primary)',
+                    fontWeight: 600,
+                    textShadow: '0 0 8px rgba(255,105,180,0.4)',
+                  }}
                 >
                   {Math.round(config.overlayOpacity * 100)}%
                 </span>
@@ -816,6 +890,7 @@ export default function GuildDashboard() {
                       borderRadius: 8,
                       border: '1px solid var(--border)',
                       minHeight: 44,
+                      boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.3)',
                     }}
                   >
                     <input
@@ -841,6 +916,8 @@ export default function GuildDashboard() {
                         cursor: 'pointer',
                         flexShrink: 0,
                         WebkitTapHighlightColor: 'transparent',
+                        boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
+                        borderRadius: 6,
                       }}
                     />
                     <span
@@ -873,12 +950,14 @@ export default function GuildDashboard() {
               padding: '14px 28px',
               borderRadius: 10,
               background: 'linear-gradient(135deg, var(--primary), var(--primary-hover))',
-              boxShadow: '0 8px 24px rgba(255,105,180,0.3)',
+              boxShadow:
+                '0 8px 24px rgba(255,105,180,0.3), 0 4px 12px rgba(255,105,180,0.2), inset 0 1px 0 rgba(255,255,255,0.2)',
               fontSize: 14,
               fontWeight: 700,
               opacity: saving ? 0.6 : 1,
               minHeight: 48,
               WebkitTapHighlightColor: 'transparent',
+              textShadow: '0 1px 2px rgba(0,0,0,0.3)',
             }}
           >
             {saving ? 'Guardando...' : '💾 Guardar Cambios'}
