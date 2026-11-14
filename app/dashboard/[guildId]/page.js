@@ -24,6 +24,7 @@ export default function GuildDashboard() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [channels, setChannels] = useState([]);
   const [guildInfo, setGuildInfo] = useState({ name: 'Mi Servidor', memberCount: 120, icon: null });
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -41,22 +42,11 @@ export default function GuildDashboard() {
     usernameColor: '#ff5c8a',
     subtitleColor: '#d1d5db',
     overlayOpacity: 0.55,
-    // 🔽 Nuevas opciones de sombras
-    shadowTitle: true,
-    shadowTitleIntensity: 0.7,
-    shadowUsername: true,
-    shadowUsernameIntensity: 0.7,
-    shadowSubtitle: true,
-    shadowSubtitleIntensity: 0.6,
-    shadowAvatar: true,
-    shadowAvatarIntensity: 0.5,
-    shadowCard: true,
-    shadowCardIntensity: 0.4,
   });
 
   useEffect(() => {
     if (!guildId) return;
-    fetch(`/api/bot/api/guilds/${guildId}/welcome`)
+    fetch(`/dashboard/${guildId}/welcome`)
       .then((res) => res.json())
       .then((data) => {
         if (data.config) setConfig((prev) => ({ ...prev, ...data.config }));
@@ -85,40 +75,40 @@ export default function GuildDashboard() {
     return `https://cdn.discordapp.com/icons/${guildId}/${guildInfo.icon}.${ext}?size=128`;
   };
 
-  // 🔽 Helpers de sombras dinámicas
-  const getTitleShadow = () => {
-    if (!config.shadowTitle) return 'none';
-    const i = config.shadowTitleIntensity;
-    return `0 2px 4px rgba(0,0,0,${i}), 0 4px 12px rgba(0,0,0,${i * 0.7}), 0 0 24px rgba(0,0,0,${i * 0.5})`;
-  };
+  const handleImageUpload = async (file) => {
+    if (!file) return;
 
-  const getUsernameShadow = () => {
-    if (!config.shadowUsername) return 'none';
-    const i = config.shadowUsernameIntensity;
-    return `0 2px 4px rgba(0,0,0,${i}), 0 4px 10px rgba(0,0,0,${i * 0.7})`;
-  };
+    if (file.size > 5 * 1024 * 1024) {
+      alert('⚠️ La imagen no puede superar 5MB');
+      return;
+    }
 
-  const getSubtitleShadow = () => {
-    if (!config.shadowSubtitle) return 'none';
-    const i = config.shadowSubtitleIntensity;
-    return `0 1px 3px rgba(0,0,0,${i}), 0 2px 8px rgba(0,0,0,${i * 0.7})`;
-  };
+    setUploading(true);
+    const formData = new FormData();
+    formData.append('file', file);
 
-  const getAvatarShadow = () => {
-    if (!config.shadowAvatar) return 'none';
-    const i = config.shadowAvatarIntensity;
-    return `0 6px 20px rgba(0,0,0,${i}), 0 0 24px ${config.borderColor}${Math.round(i * 100).toString(16).padStart(2, '0')}`;
-  };
-
-  const getCardShadow = () => {
-    if (!config.shadowCard) return 'none';
-    const i = config.shadowCardIntensity;
-    return `0 12px 32px rgba(0,0,0,${i}), 0 4px 12px rgba(0,0,0,${i * 0.7}), inset 0 1px 0 rgba(255,255,255,0.05)`;
+    try {
+      const res = await fetch(`/dashboard/${guildId}/welcome/upload`, {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.url) {
+        setConfig({ ...config, bgImage: data.url });
+      } else {
+        alert('❌ No se pudo subir la imagen');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('❌ Error al subir la imagen');
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleSave = async () => {
     setSaving(true);
-    await fetch(`/api/bot/api/guilds/${guildId}/welcome`, {
+    await fetch(`dashboard/${guildId}/welcome`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(config),
@@ -129,7 +119,7 @@ export default function GuildDashboard() {
 
   const handleTest = async () => {
     setTesting(true);
-    await fetch(`/api/bot/api/guilds/${guildId}/welcome/test`, {
+    await fetch(`/dashboard/${guildId}/welcome/test`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -663,7 +653,7 @@ export default function GuildDashboard() {
                     {formatPreviewText(config.message)}
                   </p>
 
-                  {/* TARJETA ESTILO KOYA con sombras personalizables */}
+                  {/* TARJETA ESTILO KOYA */}
                   <div
                     className={poppins.className}
                     style={{
@@ -683,7 +673,8 @@ export default function GuildDashboard() {
                       backgroundImage: config.bgImage ? `url(${config.bgImage})` : 'none',
                       backgroundSize: 'cover',
                       backgroundPosition: 'center',
-                      boxShadow: getCardShadow(),
+                      boxShadow:
+                        '0 12px 32px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.05)',
                       border: '1px solid rgba(255,255,255,0.08)',
                     }}
                   >
@@ -718,10 +709,9 @@ export default function GuildDashboard() {
                           marginBottom: 10,
                           border: `3px solid ${config.borderColor}`,
                           background: '#2b2d31',
-                          boxShadow: getAvatarShadow(),
+                          boxShadow: `0 6px 20px rgba(0,0,0,0.5), 0 0 24px ${config.borderColor}40`,
                         }}
                       />
-                      {/* TÍTULO */}
                       <h4
                         className={poppins.className}
                         style={{
@@ -733,12 +723,12 @@ export default function GuildDashboard() {
                           margin: 0,
                           lineHeight: 1.15,
                           wordBreak: 'break-word',
-                          textShadow: getTitleShadow(),
+                          textShadow:
+                            '0 2px 4px rgba(0,0,0,0.7), 0 4px 12px rgba(0,0,0,0.5), 0 0 24px rgba(0,0,0,0.4)',
                         }}
                       >
                         {formatPreviewText(config.cardTitle)}
                       </h4>
-                      {/* USERNAME */}
                       <p
                         className={poppins.className}
                         style={{
@@ -747,12 +737,12 @@ export default function GuildDashboard() {
                           marginTop: 4,
                           color: config.usernameColor,
                           wordBreak: 'break-word',
-                          textShadow: getUsernameShadow(),
+                          textShadow:
+                            '0 2px 4px rgba(0,0,0,0.7), 0 4px 10px rgba(0,0,0,0.45)',
                         }}
                       >
                         {session?.user?.name || 'Usuario#0000'}
                       </p>
-                      {/* SUBTÍTULO */}
                       <p
                         className={inter.className}
                         style={{
@@ -762,7 +752,8 @@ export default function GuildDashboard() {
                           color: config.subtitleColor,
                           wordBreak: 'break-word',
                           opacity: 0.95,
-                          textShadow: getSubtitleShadow(),
+                          textShadow:
+                            '0 1px 3px rgba(0,0,0,0.6), 0 2px 8px rgba(0,0,0,0.4)',
                         }}
                       >
                         {formatPreviewText(config.cardSubtitle)}
@@ -863,16 +854,117 @@ export default function GuildDashboard() {
             >
               🎨 Diseño de la Tarjeta
             </h3>
+
+            {/* 🔽 IMAGEN DE FONDO — SUBIDA A LA API */}
             <div className="form-group">
-              <label>URL Imagen de Fondo (opcional)</label>
+              <label>Imagen de Fondo</label>
+
               <input
-                type="url"
-                placeholder="https://i.imgur.com/..."
-                value={config.bgImage}
-                onChange={(e) => setConfig({ ...config, bgImage: e.target.value })}
-                style={{ fontSize: 16, boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.3)' }}
+                id="bgImageUpload"
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/gif"
+                onChange={(e) => {
+                  handleImageUpload(e.target.files?.[0]);
+                  e.target.value = '';
+                }}
+                disabled={uploading}
+                style={{ display: 'none' }}
               />
+
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  background: 'var(--bg)',
+                  border: '1px dashed var(--border)',
+                  borderRadius: 10,
+                  padding: 10,
+                  boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.3)',
+                }}
+              >
+                <div
+                  style={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: 8,
+                    background: config.bgImage
+                      ? `url(${config.bgImage}) center/cover`
+                      : 'var(--border)',
+                    flexShrink: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 20,
+                    overflow: 'hidden',
+                  }}
+                >
+                  {!config.bgImage && '🖼️'}
+                </div>
+
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div
+                    style={{
+                      fontSize: 12,
+                      fontWeight: 600,
+                      color: 'var(--text)',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {uploading
+                      ? 'Subiendo...'
+                      : config.bgImage
+                      ? 'Imagen cargada ✓'
+                      : 'Ninguna imagen'}
+                  </div>
+                  <div style={{ fontSize: 10, color: 'var(--muted)' }}>
+                    PNG, JPG, WEBP o GIF · máx 5MB
+                  </div>
+                </div>
+
+                <label
+                  htmlFor="bgImageUpload"
+                  style={{
+                    padding: '8px 12px',
+                    borderRadius: 8,
+                    background: uploading ? 'var(--border)' : 'var(--primary)',
+                    color: '#fff',
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: uploading ? 'not-allowed' : 'pointer',
+                    flexShrink: 0,
+                    WebkitTapHighlightColor: 'transparent',
+                    textShadow: '0 1px 2px rgba(0,0,0,0.3)',
+                    opacity: uploading ? 0.7 : 1,
+                  }}
+                >
+                  {uploading ? '⏳' : 'Subir'}
+                </label>
+
+                {config.bgImage && !uploading && (
+                  <button
+                    type="button"
+                    onClick={() => setConfig({ ...config, bgImage: '' })}
+                    style={{
+                      padding: '8px 10px',
+                      borderRadius: 8,
+                      background: 'var(--border)',
+                      color: 'var(--text)',
+                      fontSize: 12,
+                      fontWeight: 600,
+                      flexShrink: 0,
+                      WebkitTapHighlightColor: 'transparent',
+                      minHeight: 36,
+                    }}
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
             </div>
+
             <div className="form-group">
               <div
                 style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}
@@ -901,6 +993,7 @@ export default function GuildDashboard() {
                 style={{ padding: 0, accentColor: 'var(--primary)', minHeight: 36 }}
               />
             </div>
+
             <div
               style={{
                 display: 'grid',
@@ -975,120 +1068,10 @@ export default function GuildDashboard() {
           </div>
         </div>
 
-        {/* ===== SECCIÓN DE SOMBRAS PERSONALIZABLES ===== */}
-        <div className="card" style={{ marginTop: 20, boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
-          <h3
-            style={{
-              fontSize: 14,
-              fontWeight: 600,
-              marginBottom: 20,
-              textShadow: '0 1px 3px rgba(0,0,0,0.3)',
-            }}
-          >
-            🌑 Sombras Personalizables
-          </h3>
-
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))',
-              gap: 16,
-            }}
-          >
-            {[
-              { label: 'Sombra del Título', toggleKey: 'shadowTitle', intensityKey: 'shadowTitleIntensity' },
-              { label: 'Sombra del Username', toggleKey: 'shadowUsername', intensityKey: 'shadowUsernameIntensity' },
-              { label: 'Sombra del Subtítulo', toggleKey: 'shadowSubtitle', intensityKey: 'shadowSubtitleIntensity' },
-              { label: 'Sombra del Avatar', toggleKey: 'shadowAvatar', intensityKey: 'shadowAvatarIntensity' },
-              { label: 'Sombra de la Tarjeta', toggleKey: 'shadowCard', intensityKey: 'shadowCardIntensity' },
-            ].map(({ label, toggleKey, intensityKey }) => (
-              <div
-                key={toggleKey}
-                style={{
-                  background: 'var(--bg)',
-                  border: '1px solid var(--border)',
-                  borderRadius: 10,
-                  padding: 12,
-                }}
-              >
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    marginBottom: 10,
-                  }}
-                >
-                  <span style={{ fontSize: 12, fontWeight: 600 }}>{label}</span>
-                  <label
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      cursor: 'pointer',
-                      WebkitTapHighlightColor: 'transparent',
-                      margin: 0,
-                    }}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={config[toggleKey]}
-                      onChange={(e) => setConfig({ ...config, [toggleKey]: e.target.checked })}
-                      style={{
-                        appearance: 'none',
-                        WebkitAppearance: 'none',
-                        width: 38,
-                        height: 22,
-                        borderRadius: 999,
-                        background: config[toggleKey] ? 'var(--primary)' : 'var(--border)',
-                        position: 'relative',
-                        cursor: 'pointer',
-                        transition: 'background 0.2s',
-                        margin: 0,
-                        outline: 'none',
-                      }}
-                    />
-                  </label>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <input
-                    type="range"
-                    min="0"
-                    max="1"
-                    step="0.05"
-                    value={config[intensityKey]}
-                    disabled={!config[toggleKey]}
-                    onChange={(e) =>
-                      setConfig({ ...config, [intensityKey]: parseFloat(e.target.value) })
-                    }
-                    style={{
-                      flex: 1,
-                      padding: 0,
-                      accentColor: 'var(--primary)',
-                      opacity: config[toggleKey] ? 1 : 0.4,
-                      minHeight: 28,
-                    }}
-                  />
-                  <span
-                    style={{
-                      fontSize: 11,
-                      fontFamily: 'monospace',
-                      color: 'var(--muted)',
-                      minWidth: 36,
-                      textAlign: 'right',
-                    }}
-                  >
-                    {Math.round(config[intensityKey] * 100)}%
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 24 }}>
           <button
             onClick={handleSave}
-            disabled={saving}
+            disabled={saving || uploading}
             className="save-btn"
             style={{
               width: '100%',
@@ -1100,13 +1083,13 @@ export default function GuildDashboard() {
                 '0 8px 24px rgba(255,105,180,0.3), 0 4px 12px rgba(255,105,180,0.2), inset 0 1px 0 rgba(255,255,255,0.2)',
               fontSize: 14,
               fontWeight: 700,
-              opacity: saving ? 0.6 : 1,
+              opacity: saving || uploading ? 0.6 : 1,
               minHeight: 48,
               WebkitTapHighlightColor: 'transparent',
               textShadow: '0 1px 2px rgba(0,0,0,0.3)',
             }}
           >
-            {saving ? 'Guardando...' : '💾 Guardar Cambios'}
+            {saving ? 'Guardando...' : uploading ? 'Esperando imagen...' : '💾 Guardar Cambios'}
           </button>
         </div>
       </main>
