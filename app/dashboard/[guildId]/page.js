@@ -13,6 +13,7 @@ export default function GuildDashboard() {
   const [testing, setTesting] = useState(false);
   const [channels, setChannels] = useState([]);
   const [guildInfo, setGuildInfo] = useState({ name: 'Mi Servidor', memberCount: 120 });
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const [config, setConfig] = useState({
     enabled: true,
@@ -44,6 +45,15 @@ export default function GuildDashboard() {
       })
       .catch(() => setLoading(false));
   }, [guildId]);
+
+  // Bloquear scroll del body cuando el sidebar está abierto en móvil
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    document.body.style.overflow = sidebarOpen ? 'hidden' : '';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [sidebarOpen]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -81,13 +91,15 @@ export default function GuildDashboard() {
     return (
       <div
         style={{
-          minHeight: '100vh',
+          minHeight: '100dvh',
           background: 'var(--bg)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           flexDirection: 'column',
           gap: 16,
+          paddingTop: 'env(safe-area-inset-top)',
+          paddingBottom: 'env(safe-area-inset-bottom)',
         }}
       >
         <div
@@ -111,18 +123,53 @@ export default function GuildDashboard() {
   }
 
   return (
-    <div className="layout" style={{ background: 'var(--bg)' }}>
-      {/* ================= SIDEBAR ================= */}
+    <div
+      style={{
+        minHeight: '100dvh',
+        background: 'var(--bg)',
+        color: 'var(--text)',
+        display: 'flex',
+        position: 'relative',
+      }}
+    >
+      {/* ========== OVERLAY MÓVIL ========== */}
+      {sidebarOpen && (
+        <div
+          onClick={() => setSidebarOpen(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.6)',
+            zIndex: 40,
+            backdropFilter: 'blur(2px)',
+            WebkitBackdropFilter: 'blur(2px)',
+          }}
+        />
+      )}
+
+      {/* ========== SIDEBAR ========== */}
       <aside
-        className="sidebar"
         style={{
+          width: 250,
+          background: 'var(--card)',
+          borderRight: '1px solid var(--border)',
+          padding: '20px 16px',
+          paddingTop: 'calc(20px + env(safe-area-inset-top))',
+          paddingBottom: 'calc(20px + env(safe-area-inset-bottom))',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'space-between',
-          position: 'sticky',
+          position: 'fixed',
           top: 0,
-          height: '100vh',
+          left: 0,
+          height: '100dvh',
+          transform: sidebarOpen ? 'translateX(0)' : 'translateX(-100%)',
+          transition: 'transform 0.25s ease',
+          zIndex: 50,
+          overflowY: 'auto',
+          WebkitOverflowScrolling: 'touch',
         }}
+        className="cherry-sidebar"
       >
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
@@ -137,12 +184,13 @@ export default function GuildDashboard() {
                 justifyContent: 'center',
                 fontSize: 18,
                 boxShadow: '0 4px 14px rgba(255,105,180,0.35)',
+                flexShrink: 0,
               }}
             >
               🍒
             </div>
-            <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>Cherry</div>
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <div style={{ fontSize: 14, fontWeight: 700 }}>Cherry</div>
               <div
                 style={{
                   fontSize: 11,
@@ -150,12 +198,27 @@ export default function GuildDashboard() {
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
-                  maxWidth: 150,
+                  maxWidth: 140,
                 }}
               >
                 {guildInfo.name}
               </div>
             </div>
+            <button
+              onClick={() => setSidebarOpen(false)}
+              aria-label="Cerrar menú"
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--muted)',
+                fontSize: 22,
+                cursor: 'pointer',
+                padding: 4,
+                lineHeight: 1,
+              }}
+            >
+              ✕
+            </button>
           </div>
 
           <p
@@ -174,11 +237,16 @@ export default function GuildDashboard() {
 
           <nav>
             <div
-              className="nav-link active"
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: 10,
+                padding: '12px',
+                borderRadius: 8,
+                background: 'rgba(255,105,180,0.15)',
+                color: 'var(--primary)',
+                fontWeight: 600,
+                fontSize: 14,
                 cursor: 'pointer',
               }}
             >
@@ -204,35 +272,113 @@ export default function GuildDashboard() {
             display: 'flex',
             alignItems: 'center',
             gap: 8,
-            padding: '8px 12px',
+            padding: '12px',
             borderRadius: 8,
-            fontSize: 12,
+            fontSize: 13,
             color: 'var(--muted)',
+            marginTop: 16,
           }}
         >
           ← Cambiar de servidor
         </a>
       </aside>
 
-      {/* ================= MAIN ================= */}
-      <main className="main" style={{ maxWidth: 1100, margin: '0 auto', width: '100%' }}>
+      {/* ========== MAIN ========== */}
+      <main
+        style={{
+          flex: 1,
+          width: '100%',
+          maxWidth: 1100,
+          margin: '0 auto',
+          padding: '16px',
+          paddingTop: 'calc(16px + env(safe-area-inset-top))',
+          paddingBottom: 'calc(16px + env(safe-area-inset-bottom))',
+          paddingLeft: 'max(16px, env(safe-area-inset-left))',
+          paddingRight: 'max(16px, env(safe-area-inset-right))',
+          minWidth: 0,
+        }}
+        className="cherry-main"
+      >
+        {/* ========== TOPBAR MÓVIL ========== */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            marginBottom: 16,
+          }}
+          className="mobile-topbar"
+        >
+          <button
+            onClick={() => setSidebarOpen(true)}
+            aria-label="Abrir menú"
+            style={{
+              background: 'var(--card)',
+              border: '1px solid var(--border)',
+              borderRadius: 10,
+              color: 'var(--text)',
+              width: 42,
+              height: 42,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              fontSize: 20,
+              padding: 0,
+              flexShrink: 0,
+              WebkitTapHighlightColor: 'transparent',
+            }}
+          >
+            ☰
+          </button>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div
+              style={{
+                fontSize: 12,
+                color: 'var(--muted)',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {guildInfo.name}
+            </div>
+            <div style={{ fontSize: 14, fontWeight: 700 }}>Bienvenidas</div>
+          </div>
+          <div
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: '50%',
+              background: 'linear-gradient(135deg, #ff69b4, #ff85c2)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 14,
+              fontWeight: 700,
+              flexShrink: 0,
+            }}
+          >
+            {session?.user?.name?.[0]?.toUpperCase() || '?'}
+          </div>
+        </div>
+
         {/* Header del módulo */}
         <div
-          className="header"
           style={{
             display: 'flex',
             flexWrap: 'wrap',
             gap: 16,
             justifyContent: 'space-between',
             alignItems: 'center',
-            marginBottom: 24,
+            marginBottom: 20,
           }}
         >
-          <div>
-            <h1 style={{ fontSize: 24, fontWeight: 700, color: 'var(--text)' }}>
+          <div style={{ minWidth: 0 }}>
+            <h1 style={{ fontSize: 'clamp(20px, 4vw, 24px)', fontWeight: 700, marginBottom: 4 }}>
               👋 Sistema de Bienvenida
             </h1>
-            <p style={{ fontSize: 13, color: 'var(--muted)', marginTop: 4 }}>
+            <p style={{ fontSize: 13, color: 'var(--muted)' }}>
               Recibe a los nuevos miembros con una tarjeta personalizada.
             </p>
           </div>
@@ -248,12 +394,13 @@ export default function GuildDashboard() {
               borderRadius: 12,
               padding: '10px 16px',
               margin: 0,
+              WebkitTapHighlightColor: 'transparent',
             }}
           >
-            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>
+            <span style={{ fontSize: 12, fontWeight: 600 }}>
               {config.enabled ? 'Activado' : 'Desactivado'}
             </span>
-            <div style={{ position: 'relative', width: 40, height: 22 }}>
+            <div style={{ position: 'relative', width: 44, height: 26 }}>
               <input
                 type="checkbox"
                 checked={config.enabled}
@@ -266,6 +413,7 @@ export default function GuildDashboard() {
                   cursor: 'pointer',
                   position: 'absolute',
                   zIndex: 2,
+                  inset: 0,
                 }}
               />
               <div
@@ -280,10 +428,10 @@ export default function GuildDashboard() {
               <div
                 style={{
                   position: 'absolute',
-                  top: 2,
-                  left: config.enabled ? 20 : 2,
-                  width: 18,
-                  height: 18,
+                  top: 3,
+                  left: config.enabled ? 21 : 3,
+                  width: 20,
+                  height: 20,
                   borderRadius: '50%',
                   background: '#fff',
                   transition: 'left 0.2s',
@@ -301,8 +449,10 @@ export default function GuildDashboard() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              padding: '12px 20px',
+              padding: '12px 16px',
               borderBottom: '1px solid var(--border)',
+              gap: 8,
+              flexWrap: 'wrap',
             }}
           >
             <h3 style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted)', margin: 0 }}>
@@ -313,35 +463,37 @@ export default function GuildDashboard() {
               disabled={testing}
               style={{
                 fontSize: 12,
-                padding: '6px 12px',
+                padding: '10px 14px',
                 background: 'var(--border)',
                 borderRadius: 8,
                 opacity: testing ? 0.6 : 1,
+                minHeight: 40,
+                WebkitTapHighlightColor: 'transparent',
               }}
             >
               {testing ? 'Enviando...' : '🚀 Probar en Discord'}
             </button>
           </div>
 
-          <div style={{ padding: 20, background: 'rgba(0,0,0,0.25)' }}>
+          <div style={{ padding: 12, background: 'rgba(0,0,0,0.25)' }}>
             <div
               style={{
                 background: '#313338',
                 borderRadius: 12,
-                padding: 16,
+                padding: 12,
               }}
             >
-              <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                 <div
                   style={{
-                    width: 36,
-                    height: 36,
+                    width: 32,
+                    height: 32,
                     borderRadius: '50%',
                     background: 'linear-gradient(135deg, #ff69b4, #ff85c2)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: 14,
+                    fontSize: 13,
                     flexShrink: 0,
                   }}
                 >
@@ -363,7 +515,7 @@ export default function GuildDashboard() {
                       BOT
                     </span>
                   </div>
-                  <p style={{ fontSize: 13, color: '#e0e0e0', marginTop: 4, margin: '4px 0 0' }}>
+                  <p style={{ fontSize: 13, color: '#e0e0e0', margin: '4px 0 0', wordBreak: 'break-word' }}>
                     {formatPreviewText(config.message)}
                   </p>
 
@@ -373,7 +525,6 @@ export default function GuildDashboard() {
                       position: 'relative',
                       marginTop: 12,
                       width: '100%',
-                      maxWidth: 560,
                       aspectRatio: '600 / 260',
                       borderRadius: 12,
                       overflow: 'hidden',
@@ -382,7 +533,7 @@ export default function GuildDashboard() {
                       alignItems: 'center',
                       justifyContent: 'center',
                       textAlign: 'center',
-                      padding: 24,
+                      padding: 16,
                       backgroundColor: config.bgColor,
                       backgroundImage: config.bgImage ? `url(${config.bgImage})` : 'none',
                       backgroundSize: 'cover',
@@ -405,47 +556,52 @@ export default function GuildDashboard() {
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'center',
+                        maxWidth: '100%',
                       }}
                     >
                       <img
                         src={session?.user?.image || 'https://cdn.discordapp.com/embed/avatars/0.png'}
                         alt="Avatar"
                         style={{
-                          width: 88,
-                          height: 88,
+                          width: 'clamp(56px, 14vw, 88px)',
+                          height: 'clamp(56px, 14vw, 88px)',
                           borderRadius: '50%',
                           objectFit: 'cover',
-                          marginBottom: 10,
-                          border: `4px solid ${config.borderColor}`,
+                          marginBottom: 8,
+                          border: `3px solid ${config.borderColor}`,
                         }}
                       />
                       <h4
                         style={{
-                          fontSize: 22,
+                          fontSize: 'clamp(14px, 3.5vw, 22px)',
                           fontWeight: 800,
                           textTransform: 'uppercase',
                           letterSpacing: '0.02em',
                           color: config.titleColor,
                           margin: 0,
+                          lineHeight: 1.1,
+                          wordBreak: 'break-word',
                         }}
                       >
                         {formatPreviewText(config.cardTitle)}
                       </h4>
                       <p
                         style={{
-                          fontSize: 16,
+                          fontSize: 'clamp(12px, 2.8vw, 16px)',
                           fontWeight: 700,
                           marginTop: 2,
                           color: config.usernameColor,
+                          wordBreak: 'break-word',
                         }}
                       >
                         {session?.user?.name || 'Usuario#0000'}
                       </p>
                       <p
                         style={{
-                          fontSize: 13,
+                          fontSize: 'clamp(10px, 2.4vw, 13px)',
                           marginTop: 4,
                           color: config.subtitleColor,
+                          wordBreak: 'break-word',
                         }}
                       >
                         {formatPreviewText(config.cardSubtitle)}
@@ -460,12 +616,15 @@ export default function GuildDashboard() {
 
         {/* ===== Formularios ===== */}
         <div
-          className="grid"
-          style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16 }}
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))',
+            gap: 16,
+          }}
         >
           {/* Columna 1 */}
           <div className="card">
-            <h3 style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', marginBottom: 20 }}>
+            <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 20 }}>
               💬 Canal y Mensajes
             </h3>
 
@@ -474,6 +633,7 @@ export default function GuildDashboard() {
               <select
                 value={config.channelId}
                 onChange={(e) => setConfig({ ...config, channelId: e.target.value })}
+                style={{ fontSize: 16 }} // Evita zoom en iOS
               >
                 <option value="">Selecciona un canal...</option>
                 {channels.map((ch) => (
@@ -490,7 +650,7 @@ export default function GuildDashboard() {
                 rows={2}
                 value={config.message}
                 onChange={(e) => setConfig({ ...config, message: e.target.value })}
-                style={{ resize: 'none' }}
+                style={{ resize: 'none', fontSize: 16 }} // Evita zoom iOS
               />
               <span style={{ fontSize: 11, color: 'var(--muted)', marginTop: 6, display: 'inline-block' }}>
                 Variables: {'{user}'}, {'{server}'}, {'{count}'}
@@ -503,6 +663,7 @@ export default function GuildDashboard() {
                 type="text"
                 value={config.cardTitle}
                 onChange={(e) => setConfig({ ...config, cardTitle: e.target.value })}
+                style={{ fontSize: 16 }}
               />
             </div>
 
@@ -512,13 +673,14 @@ export default function GuildDashboard() {
                 type="text"
                 value={config.cardSubtitle}
                 onChange={(e) => setConfig({ ...config, cardSubtitle: e.target.value })}
+                style={{ fontSize: 16 }}
               />
             </div>
           </div>
 
           {/* Columna 2 */}
           <div className="card">
-            <h3 style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', marginBottom: 20 }}>
+            <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 20 }}>
               🎨 Diseño de la Tarjeta
             </h3>
 
@@ -529,6 +691,7 @@ export default function GuildDashboard() {
                 placeholder="https://i.imgur.com/..."
                 value={config.bgImage}
                 onChange={(e) => setConfig({ ...config, bgImage: e.target.value })}
+                style={{ fontSize: 16 }}
               />
             </div>
 
@@ -546,118 +709,77 @@ export default function GuildDashboard() {
                 step="0.05"
                 value={config.overlayOpacity}
                 onChange={(e) => setConfig({ ...config, overlayOpacity: parseFloat(e.target.value) })}
-                style={{ padding: 0, accentColor: 'var(--primary)' }}
+                style={{ padding: 0, accentColor: 'var(--primary)', minHeight: 36 }}
               />
             </div>
 
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: '1fr 1fr',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
                 gap: 12,
               }}
             >
-              <div>
-                <label>Color de Fondo</label>
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    background: 'var(--bg)',
-                    padding: 6,
-                    borderRadius: 8,
-                    border: '1px solid var(--border)',
-                  }}
-                >
-                  <input
-                    type="color"
-                    value={config.bgColor}
-                    onChange={(e) => setConfig({ ...config, bgColor: e.target.value })}
-                    style={{ width: 28, height: 28, padding: 0, border: 'none', background: 'transparent', cursor: 'pointer' }}
-                  />
-                  <span style={{ fontSize: 10, fontFamily: 'monospace', color: 'var(--muted)' }}>
-                    {config.bgColor}
-                  </span>
+              {[
+                { label: 'Color de Fondo', key: 'bgColor' },
+                { label: 'Borde y Nombre', key: 'borderColor' },
+                { label: 'Color Título', key: 'titleColor' },
+                { label: 'Color Subtítulo', key: 'subtitleColor' },
+              ].map(({ label, key }) => (
+                <div key={key}>
+                  <label>{label}</label>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      background: 'var(--bg)',
+                      padding: 6,
+                      borderRadius: 8,
+                      border: '1px solid var(--border)',
+                      minHeight: 44,
+                    }}
+                  >
+                    <input
+                      type="color"
+                      value={config[key]}
+                      onChange={(e) => {
+                        if (key === 'borderColor') {
+                          setConfig({
+                            ...config,
+                            borderColor: e.target.value,
+                            usernameColor: e.target.value,
+                          });
+                        } else {
+                          setConfig({ ...config, [key]: e.target.value });
+                        }
+                      }}
+                      style={{
+                        width: 32,
+                        height: 32,
+                        padding: 0,
+                        border: 'none',
+                        background: 'transparent',
+                        cursor: 'pointer',
+                        flexShrink: 0,
+                        WebkitTapHighlightColor: 'transparent',
+                      }}
+                    />
+                    <span
+                      style={{
+                        fontSize: 10,
+                        fontFamily: 'monospace',
+                        color: 'var(--muted)',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {config[key]}
+                    </span>
+                  </div>
                 </div>
-              </div>
-
-              <div>
-                <label>Borde y Nombre</label>
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    background: 'var(--bg)',
-                    padding: 6,
-                    borderRadius: 8,
-                    border: '1px solid var(--border)',
-                  }}
-                >
-                  <input
-                    type="color"
-                    value={config.borderColor}
-                    onChange={(e) =>
-                      setConfig({ ...config, borderColor: e.target.value, usernameColor: e.target.value })
-                    }
-                    style={{ width: 28, height: 28, padding: 0, border: 'none', background: 'transparent', cursor: 'pointer' }}
-                  />
-                  <span style={{ fontSize: 10, fontFamily: 'monospace', color: 'var(--muted)' }}>
-                    {config.borderColor}
-                  </span>
-                </div>
-              </div>
-
-              <div>
-                <label>Color Título</label>
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    background: 'var(--bg)',
-                    padding: 6,
-                    borderRadius: 8,
-                    border: '1px solid var(--border)',
-                  }}
-                >
-                  <input
-                    type="color"
-                    value={config.titleColor}
-                    onChange={(e) => setConfig({ ...config, titleColor: e.target.value })}
-                    style={{ width: 28, height: 28, padding: 0, border: 'none', background: 'transparent', cursor: 'pointer' }}
-                  />
-                  <span style={{ fontSize: 10, fontFamily: 'monospace', color: 'var(--muted)' }}>
-                    {config.titleColor}
-                  </span>
-                </div>
-              </div>
-
-              <div>
-                <label>Color Subtítulo</label>
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    background: 'var(--bg)',
-                    padding: 6,
-                    borderRadius: 8,
-                    border: '1px solid var(--border)',
-                  }}
-                >
-                  <input
-                    type="color"
-                    value={config.subtitleColor}
-                    onChange={(e) => setConfig({ ...config, subtitleColor: e.target.value })}
-                    style={{ width: 28, height: 28, padding: 0, border: 'none', background: 'transparent', cursor: 'pointer' }}
-                  />
-                  <span style={{ fontSize: 10, fontFamily: 'monospace', color: 'var(--muted)' }}>
-                    {config.subtitleColor}
-                  </span>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
         </div>
@@ -668,19 +790,99 @@ export default function GuildDashboard() {
             onClick={handleSave}
             disabled={saving}
             style={{
-              padding: '12px 28px',
+              width: '100%',
+              maxWidth: 320,
+              padding: '14px 28px',
               borderRadius: 10,
               background: 'linear-gradient(135deg, var(--primary), var(--primary-hover))',
               boxShadow: '0 8px 24px rgba(255,105,180,0.3)',
-              fontSize: 13,
+              fontSize: 14,
               fontWeight: 700,
               opacity: saving ? 0.6 : 1,
+              minHeight: 48,
+              WebkitTapHighlightColor: 'transparent',
             }}
+            className="save-btn"
           >
             {saving ? 'Guardando...' : '💾 Guardar Cambios'}
           </button>
         </div>
       </main>
+
+      {/* ========== ESTILOS RESPONSIVE + SAFE AREA ========== */}
+      <style jsx global>{`
+        /* Desktop: sidebar siempre visible */
+        @media (min-width: 768px) {
+          .cherry-sidebar {
+            position: sticky !important;
+            transform: translateX(0) !important;
+            height: 100vh !important;
+            top: 0 !important;
+          }
+          .cherry-sidebar button[aria-label='Cerrar menú'] {
+            display: none !important;
+          }
+          .mobile-topbar {
+            display: none !important;
+          }
+          .cherry-main {
+            padding: 32px !important;
+          }
+          .save-btn {
+            width: auto !important;
+          }
+        }
+
+        /* Móvil: sidebar deslizable */
+        @media (max-width: 767px) {
+          .cherry-main {
+            padding: 16px !important;
+            padding-top: calc(16px + env(safe-area-inset-top)) !important;
+            padding-bottom: calc(20px + env(safe-area-inset-bottom)) !important;
+            padding-left: max(16px, env(safe-area-inset-left)) !important;
+            padding-right: max(16px, env(safe-area-inset-right)) !important;
+          }
+        }
+
+        /* Fix iOS: 100dvh en Safari antiguo */
+        @supports (-webkit-touch-callout: none) {
+          .cherry-sidebar {
+            height: -webkit-fill-available;
+          }
+        }
+
+        /* Prevenir zoom automático en iOS en inputs (font-size >= 16px) */
+        @media (max-width: 767px) {
+          input,
+          select,
+          textarea {
+            font-size: 16px !important;
+          }
+          input[type='color'] {
+            font-size: initial !important;
+          }
+        }
+
+        /* Scroll suave táctil */
+        * {
+          -webkit-overflow-scrolling: touch;
+        }
+
+        /* Previene el highlight azul del tap en Android/iOS */
+        button,
+        a,
+        input[type='checkbox'] {
+          -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Scrollbar móvil más fina */
+        @media (max-width: 767px) {
+          ::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+          }
+        }
+      `}</style>
     </div>
   );
 }
