@@ -141,75 +141,88 @@ export default function GuildDashboard() {
           </div>
         </div>
 
-        {/* Vista Previa en Tiempo Real (Estilo Discord + Koya Card) */}
-        <div className="bg-[#18191c] p-6 rounded-2xl border border-white/5 space-y-4">
+        {/* Vista Previa en Tiempo Real (Estilo Koya.gg Profesional) */}
+        <div className="bg-[#18191c] p-6 rounded-2xl border border-white/5 space-y-4 shadow-xl">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-gray-400">
-              Vista Previa en Vivo
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-400 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-pink-500 animate-pulse"></span>
+              Vista Previa en Vivo (Estilo Koya)
             </h3>
             <button
               onClick={handleTest}
               disabled={testing}
-              className="px-4 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-medium text-white border border-white/10 transition"
+              className="px-4 py-1.5 rounded-xl bg-pink-500/10 hover:bg-pink-500/20 text-xs font-semibold text-pink-400 border border-pink-500/20 transition shadow-sm"
             >
               {testing ? 'Enviando...' : '🚀 Probar en Discord'}
             </button>
           </div>
 
           {/* Simulación de mensaje de Discord */}
-          <div className="bg-[#313338] p-4 rounded-xl space-y-3">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-pink-500 flex items-center justify-center font-bold text-sm">
+          <div className="bg-[#2b2d31] p-4 sm:p-5 rounded-2xl space-y-4 border border-white/5">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-pink-600 to-rose-400 flex items-center justify-center font-bold text-white shadow-md shrink-0">
                 🍒
               </div>
-              <div>
+              <div className="space-y-1 overflow-hidden">
                 <div className="flex items-center gap-2">
-                  <span className="font-semibold text-white text-sm">Cherry</span>
-                  <span className="bg-[#5865f2] text-[10px] font-bold px-1.5 py-0.5 rounded text-white">BOT</span>
+                  <span className="font-bold text-white text-sm">Cherry</span>
+                  <span className="bg-[#5865f2] text-[10px] font-extrabold px-1.5 py-0.5 rounded text-white tracking-wide">BOT</span>
+                  <span className="text-xs text-gray-400">Hoy a las 2:12 p. m.</span>
                 </div>
-                <p className="text-sm text-gray-200 mt-0.5">{formatPreviewText(config.message)}</p>
+                <p className="text-sm text-gray-200 font-medium">{formatPreviewText(config.message)}</p>
               </div>
             </div>
 
-            {/* Tarjeta Canvas Simulada */}
+            {/* Tarjeta Canvas Estilo Koya.gg (Responsive y Limpia) */}
             <div
-              className="relative w-full max-w-[600px] h-[260px] rounded-xl overflow-hidden flex flex-col items-center justify-center text-center p-6 ml-12 shadow-xl transition-all"
+              className="relative w-full aspect-[8/3.5] min-h-[240px] rounded-2xl overflow-hidden flex flex-col items-center justify-center text-center p-6 shadow-2xl transition-all border border-white/10"
               style={{
-                backgroundColor: config.bgColor,
+                backgroundColor: config.bgColor || '#1e1f22',
                 backgroundImage: config.bgImage ? `url(${config.bgImage})` : 'none',
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
               }}
             >
-              {/* Overlay oscuro */}
+              {/* Overlay oscuro translúcido estilo Koya */}
               <div
-                className="absolute inset-3 rounded-xl transition-all"
-                style={{ backgroundColor: `rgba(0, 0, 0, ${config.overlayOpacity})` }}
+                className="absolute inset-0 transition-all pointer-events-none"
+                style={{ backgroundColor: `rgba(0, 0, 0, ${config.overlayOpacity ?? 0.55})` }}
               />
 
-              {/* Contenido de la tarjeta */}
-              <div className="relative z-10 flex flex-col items-center">
-                <img
-                  src={session?.user?.image || 'https://cdn.discordapp.com/embed/avatars/0.png'}
-                  alt="Avatar"
-                  className="w-24 h-24 rounded-full object-cover mb-3 shadow-md"
-                  style={{ border: `4px solid ${config.borderColor}` }}
-                />
+              {/* Contenido Interno de la Tarjeta */}
+              <div className="relative z-10 flex flex-col items-center max-w-lg mx-auto w-full">
+                {/* Contenedor del Avatar perfectamente circular */}
+                <div 
+                  className="w-20 h-20 sm:w-24 sm:h-24 rounded-full p-1 shadow-xl mb-3 flex items-center justify-center bg-[#18191c]/80 backdrop-blur-md shrink-0"
+                  style={{ border: `3px solid ${config.borderColor || '#ff5c8a'}` }}
+                >
+                  <img
+                    src={session?.user?.image || 'https://cdn.discordapp.com/embed/avatars/0.png'}
+                    alt="Avatar"
+                    className="w-full h-full rounded-full object-cover"
+                  />
+                </div>
+
+                {/* Título Principal */}
                 <h4
-                  className="text-2xl font-extrabold tracking-wide uppercase"
-                  style={{ color: config.titleColor }}
+                  className="text-xl sm:text-2xl font-black tracking-wider uppercase drop-shadow-md"
+                  style={{ color: config.titleColor || '#ffffff' }}
                 >
                   {formatPreviewText(config.cardTitle)}
                 </h4>
+
+                {/* Nombre de Usuario */}
                 <p
-                  className="text-lg font-bold mt-0.5"
-                  style={{ color: config.usernameColor }}
+                  className="text-base sm:text-lg font-bold mt-0.5 drop-shadow"
+                  style={{ color: config.usernameColor || '#ff5c8a' }}
                 >
                   {session?.user?.name || 'Usuario#0000'}
                 </p>
+
+                {/* Subtítulo / Contador */}
                 <p
-                  className="text-sm mt-1"
-                  style={{ color: config.subtitleColor }}
+                  className="text-xs sm:text-sm font-medium mt-1.5 opacity-90 drop-shadow"
+                  style={{ color: config.subtitleColor || '#d1d5db' }}
                 >
                   {formatPreviewText(config.cardSubtitle)}
                 </p>
