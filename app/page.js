@@ -8,23 +8,41 @@ export default function Home() {
   const { data: session, status } = useSession();
   const [guilds, setGuilds] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [debugError, setDebugError] = useState(null);
 
   useEffect(() => {
-    if (session?.accessToken) {
-      setLoading(true);
-      fetch('https://discord.com/api/users/@me/guilds', {
-        headers: { Authorization: `Bearer ${session.accessToken}` },
-      })
-        .then(r => r.json())
-        .then(data => {
-          // Only guilds where user has ADMIN or MANAGE_GUILD
-          const adminGuilds = (data || []).filter(g => (BigInt(g.permissions) & BigInt(0x8)) === BigInt(0x8) || (BigInt(g.permissions) & BigInt(0x20)) === BigInt(0x20));
-          setGuilds(adminGuilds);
-        })
-        .catch(console.error)
-        .finally(() => setLoading(false));
+    if (status !== 'authenticated') return;
+
+    if (!session?.accessToken) {
+      setDebugError('Falta el accessToken en la sesión. Revisa los callbacks en route.js de NextAuth y vuelve a iniciar sesión.');
+      return;
     }
-  }, [session]);
+
+    setLoading(true);
+    setDebugError(null);
+
+    fetch('https://discord.com/api/users/@me/guilds', {
+      headers: { Authorization: `Bearer ${session.accessToken}` },
+    })
+      .then(async (r) => {
+        const data = await r.json();
+        if (!r.ok || !Array.isArray(data)) {
+          throw new Error(data?.message || `Error de Discord (${r.status})`);
+        }
+        // Filtrar servidores donde tienes ADMINISTRATOR (0x8) o MANAGE_GUILD (0x20)
+        const adminGuilds = data.filter(
+          (g) =>
+            (BigInt(g.permissions) & BigInt(0x8)) === BigInt(0x8) ||
+            (BigInt(g.permissions) & BigInt(0x20)) === BigInt(0x20)
+        );
+        setGuilds(adminGuilds);
+      })
+      .catch((err) => {
+        console.error(err);
+        setDebugError(err.message);
+      })
+      .finally(() => setLoading(false));
+  }, [session, status]);
 
   if (status === 'loading') {
     return (
@@ -62,6 +80,14 @@ export default function Home() {
       </div>
 
       <h2 style={{ marginBottom: '1rem' }}>Tus servidores</h2>
+
+      {debugError && (
+        <div className="card" style={{ border: '1px solid #ff4d4f', marginBottom: '1rem' }}>
+          <p style={{ color: '#ff4d4f', fontWeight: 600 }}>⚠️ Diagnóstico:</p>
+          <p style={{ marginTop: '0.5rem' }}>{debugError}</p>
+        </div>
+      )}
+
       {loading ? (
         <p>Cargando servidores...</p>
       ) : guilds.length === 0 ? (
@@ -73,7 +99,7 @@ export default function Home() {
         </div>
       ) : (
         <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}>
-          {guilds.map(g => (
+          {guilds.map((g) => (
             <Link key={g.id} href={`/dashboard/${g.id}`} className="guild-card">
               {g.icon ? (
                 <img
@@ -82,7 +108,10 @@ export default function Home() {
                   alt=""
                 />
               ) : (
-                <div className="guild-icon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>
+                <div
+                  className="guild-icon"
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}
+                >
                   {g.name[0]}
                 </div>
               )}
