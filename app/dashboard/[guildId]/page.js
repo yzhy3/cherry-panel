@@ -79,157 +79,401 @@ export default function GuildDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#111214] text-white flex items-center justify-center">
-        <div className="animate-pulse text-pink-500 font-semibold text-lg">Cargando panel de Cherry...</div>
+      <div
+        style={{
+          minHeight: '100vh',
+          background: 'var(--bg)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexDirection: 'column',
+          gap: 16,
+        }}
+      >
+        <div
+          style={{
+            width: 48,
+            height: 48,
+            borderRadius: 14,
+            background: 'linear-gradient(135deg, #ff69b4, #ff85c2)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: 22,
+            boxShadow: '0 8px 24px rgba(255,105,180,0.35)',
+          }}
+        >
+          🍒
+        </div>
+        <p style={{ color: 'var(--muted)', fontSize: 13 }}>Cargando panel de Cherry...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#111214] text-gray-100 flex">
-      {/* Sidebar estilo Koya.gg */}
-      <aside className="w-64 bg-[#18191c] border-r border-white/5 p-5 hidden md:flex flex-col justify-between">
+    <div className="layout" style={{ background: 'var(--bg)' }}>
+      {/* ================= SIDEBAR ================= */}
+      <aside
+        className="sidebar"
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          position: 'sticky',
+          top: 0,
+          height: '100vh',
+        }}
+      >
         <div>
-          <div className="flex items-center gap-3 mb-8">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-pink-600 to-rose-400 flex items-center justify-center font-bold text-white text-xl shadow-lg shadow-pink-500/20">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
+            <div
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 10,
+                background: 'linear-gradient(135deg, #ff69b4, #ff85c2)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 18,
+                boxShadow: '0 4px 14px rgba(255,105,180,0.35)',
+              }}
+            >
               🍒
             </div>
-            <div>
-              <h1 className="font-bold text-white leading-tight">Cherry</h1>
-              <span className="text-xs text-gray-400 truncate block max-w-[140px]">{guildInfo.name}</span>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>Cherry</div>
+              <div
+                style={{
+                  fontSize: 11,
+                  color: 'var(--muted)',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  maxWidth: 150,
+                }}
+              >
+                {guildInfo.name}
+              </div>
             </div>
           </div>
 
-          <nav className="space-y-1">
-            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-3 mb-2">Módulos</div>
-            <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg bg-pink-500/15 text-pink-400 font-medium text-sm border border-pink-500/20">
-              <span>👋</span> Bienvenidas
-            </button>
+          <p
+            style={{
+              fontSize: 10,
+              fontWeight: 700,
+              color: 'var(--muted)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.1em',
+              marginBottom: 10,
+              padding: '0 8px',
+            }}
+          >
+            Módulos
+          </p>
+
+          <nav>
+            <div
+              className="nav-link active"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                cursor: 'pointer',
+              }}
+            >
+              <span>👋</span>
+              <span>Bienvenidas</span>
+              <span
+                style={{
+                  marginLeft: 'auto',
+                  width: 6,
+                  height: 6,
+                  borderRadius: '50%',
+                  background: 'var(--primary)',
+                  boxShadow: '0 0 8px var(--primary)',
+                }}
+              />
+            </div>
           </nav>
         </div>
 
-        <a href="/dashboard" className="text-xs text-gray-400 hover:text-white transition px-3 py-2">
+        <a
+          href="/dashboard"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '8px 12px',
+            borderRadius: 8,
+            fontSize: 12,
+            color: 'var(--muted)',
+          }}
+        >
           ← Cambiar de servidor
         </a>
       </aside>
 
-      {/* Contenido Principal */}
-      <main className="flex-1 p-6 md:p-10 max-w-6xl mx-auto space-y-8">
+      {/* ================= MAIN ================= */}
+      <main className="main" style={{ maxWidth: 1100, margin: '0 auto', width: '100%' }}>
         {/* Header del módulo */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[#18191c] p-6 rounded-2xl border border-white/5">
+        <div
+          className="header"
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: 16,
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: 24,
+          }}
+        >
           <div>
-            <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+            <h1 style={{ fontSize: 24, fontWeight: 700, color: 'var(--text)' }}>
               👋 Sistema de Bienvenida
-            </h2>
-            <p className="text-sm text-gray-400 mt-1">
-              Recibe a los nuevos miembros con una tarjeta personalizada estilo Koya.
+            </h1>
+            <p style={{ fontSize: 13, color: 'var(--muted)', marginTop: 4 }}>
+              Recibe a los nuevos miembros con una tarjeta personalizada.
             </p>
           </div>
 
-          <div className="flex items-center gap-4">
-            <label className="flex items-center gap-3 cursor-pointer">
-              <span className="text-sm font-medium text-gray-300">
-                {config.enabled ? 'Activado' : 'Desactivado'}
-              </span>
+          <label
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              cursor: 'pointer',
+              background: 'var(--card)',
+              border: '1px solid var(--border)',
+              borderRadius: 12,
+              padding: '10px 16px',
+              margin: 0,
+            }}
+          >
+            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>
+              {config.enabled ? 'Activado' : 'Desactivado'}
+            </span>
+            <div style={{ position: 'relative', width: 40, height: 22 }}>
               <input
                 type="checkbox"
                 checked={config.enabled}
                 onChange={(e) => setConfig({ ...config, enabled: e.target.checked })}
-                className="w-5 h-5 accent-pink-500 rounded cursor-pointer"
+                style={{
+                  opacity: 0,
+                  width: '100%',
+                  height: '100%',
+                  margin: 0,
+                  cursor: 'pointer',
+                  position: 'absolute',
+                  zIndex: 2,
+                }}
               />
-            </label>
-          </div>
+              <div
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  borderRadius: 999,
+                  background: config.enabled ? 'var(--primary)' : 'var(--border)',
+                  transition: 'background 0.2s',
+                }}
+              />
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 2,
+                  left: config.enabled ? 20 : 2,
+                  width: 18,
+                  height: 18,
+                  borderRadius: '50%',
+                  background: '#fff',
+                  transition: 'left 0.2s',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+                }}
+              />
+            </div>
+          </label>
         </div>
 
-        {/* Vista Previa en Tiempo Real (Estilo Discord + Koya Card) */}
-        <div className="bg-[#18191c] p-6 rounded-2xl border border-white/5 space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-gray-400">
+        {/* ===== Vista previa ===== */}
+        <div className="card" style={{ padding: 0, overflow: 'hidden', marginBottom: 20 }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '12px 20px',
+              borderBottom: '1px solid var(--border)',
+            }}
+          >
+            <h3 style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted)', margin: 0 }}>
               Vista Previa en Vivo
             </h3>
             <button
               onClick={handleTest}
               disabled={testing}
-              className="px-4 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-medium text-white border border-white/10 transition"
+              style={{
+                fontSize: 12,
+                padding: '6px 12px',
+                background: 'var(--border)',
+                borderRadius: 8,
+                opacity: testing ? 0.6 : 1,
+              }}
             >
               {testing ? 'Enviando...' : '🚀 Probar en Discord'}
             </button>
           </div>
 
-          {/* Simulación de mensaje de Discord */}
-          <div className="bg-[#313338] p-4 rounded-xl space-y-3">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-pink-500 flex items-center justify-center font-bold text-sm">
-                🍒
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold text-white text-sm">Cherry</span>
-                  <span className="bg-[#5865f2] text-[10px] font-bold px-1.5 py-0.5 rounded text-white">BOT</span>
-                </div>
-                <p className="text-sm text-gray-200 mt-0.5">{formatPreviewText(config.message)}</p>
-              </div>
-            </div>
-
-            {/* Tarjeta Canvas Simulada */}
+          <div style={{ padding: 20, background: 'rgba(0,0,0,0.25)' }}>
             <div
-              className="relative w-full max-w-[600px] h-[260px] rounded-xl overflow-hidden flex flex-col items-center justify-center text-center p-6 ml-12 shadow-xl transition-all"
               style={{
-                backgroundColor: config.bgColor,
-                backgroundImage: config.bgImage ? `url(${config.bgImage})` : 'none',
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
+                background: '#313338',
+                borderRadius: 12,
+                padding: 16,
               }}
             >
-              {/* Overlay oscuro */}
-              <div
-                className="absolute inset-3 rounded-xl transition-all"
-                style={{ backgroundColor: `rgba(0, 0, 0, ${config.overlayOpacity})` }}
-              />
+              <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                <div
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: '50%',
+                    background: 'linear-gradient(135deg, #ff69b4, #ff85c2)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 14,
+                    flexShrink: 0,
+                  }}
+                >
+                  🍒
+                </div>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontWeight: 700, color: '#fff', fontSize: 13 }}>Cherry</span>
+                    <span
+                      style={{
+                        background: '#5865f2',
+                        fontSize: 9,
+                        fontWeight: 700,
+                        padding: '2px 6px',
+                        borderRadius: 4,
+                        color: '#fff',
+                      }}
+                    >
+                      BOT
+                    </span>
+                  </div>
+                  <p style={{ fontSize: 13, color: '#e0e0e0', marginTop: 4, margin: '4px 0 0' }}>
+                    {formatPreviewText(config.message)}
+                  </p>
 
-              {/* Contenido de la tarjeta */}
-              <div className="relative z-10 flex flex-col items-center">
-                <img
-                  src={session?.user?.image || 'https://cdn.discordapp.com/embed/avatars/0.png'}
-                  alt="Avatar"
-                  className="w-24 h-24 rounded-full object-cover mb-3 shadow-md"
-                  style={{ border: `4px solid ${config.borderColor}` }}
-                />
-                <h4
-                  className="text-2xl font-extrabold tracking-wide uppercase"
-                  style={{ color: config.titleColor }}
-                >
-                  {formatPreviewText(config.cardTitle)}
-                </h4>
-                <p
-                  className="text-lg font-bold mt-0.5"
-                  style={{ color: config.usernameColor }}
-                >
-                  {session?.user?.name || 'Usuario#0000'}
-                </p>
-                <p
-                  className="text-sm mt-1"
-                  style={{ color: config.subtitleColor }}
-                >
-                  {formatPreviewText(config.cardSubtitle)}
-                </p>
+                  {/* Tarjeta canvas */}
+                  <div
+                    style={{
+                      position: 'relative',
+                      marginTop: 12,
+                      width: '100%',
+                      maxWidth: 560,
+                      aspectRatio: '600 / 260',
+                      borderRadius: 12,
+                      overflow: 'hidden',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      textAlign: 'center',
+                      padding: 24,
+                      backgroundColor: config.bgColor,
+                      backgroundImage: config.bgImage ? `url(${config.bgImage})` : 'none',
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center',
+                      boxShadow: '0 12px 32px rgba(0,0,0,0.4)',
+                      border: '1px solid rgba(255,255,255,0.08)',
+                    }}
+                  >
+                    <div
+                      style={{
+                        position: 'absolute',
+                        inset: 0,
+                        background: `rgba(0,0,0,${config.overlayOpacity})`,
+                      }}
+                    />
+                    <div
+                      style={{
+                        position: 'relative',
+                        zIndex: 10,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <img
+                        src={session?.user?.image || 'https://cdn.discordapp.com/embed/avatars/0.png'}
+                        alt="Avatar"
+                        style={{
+                          width: 88,
+                          height: 88,
+                          borderRadius: '50%',
+                          objectFit: 'cover',
+                          marginBottom: 10,
+                          border: `4px solid ${config.borderColor}`,
+                        }}
+                      />
+                      <h4
+                        style={{
+                          fontSize: 22,
+                          fontWeight: 800,
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.02em',
+                          color: config.titleColor,
+                          margin: 0,
+                        }}
+                      >
+                        {formatPreviewText(config.cardTitle)}
+                      </h4>
+                      <p
+                        style={{
+                          fontSize: 16,
+                          fontWeight: 700,
+                          marginTop: 2,
+                          color: config.usernameColor,
+                        }}
+                      >
+                        {session?.user?.name || 'Usuario#0000'}
+                      </p>
+                      <p
+                        style={{
+                          fontSize: 13,
+                          marginTop: 4,
+                          color: config.subtitleColor,
+                        }}
+                      >
+                        {formatPreviewText(config.cardSubtitle)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Formulario de Personalización */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Columna 1: Canal y Textos */}
-          <div className="bg-[#18191c] p-6 rounded-2xl border border-white/5 space-y-5">
-            <h3 className="font-semibold text-white text-lg">Canal y Mensajes</h3>
+        {/* ===== Formularios ===== */}
+        <div
+          className="grid"
+          style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16 }}
+        >
+          {/* Columna 1 */}
+          <div className="card">
+            <h3 style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', marginBottom: 20 }}>
+              💬 Canal y Mensajes
+            </h3>
 
-            <div>
-              <label className="block text-xs font-medium text-gray-400 mb-1.5">Canal de Bienvenida</label>
+            <div className="form-group">
+              <label>Canal de Bienvenida</label>
               <select
                 value={config.channelId}
                 onChange={(e) => setConfig({ ...config, channelId: e.target.value })}
-                className="w-full bg-[#111214] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-pink-500"
               >
                 <option value="">Selecciona un canal...</option>
                 {channels.map((ch) => (
@@ -240,59 +484,61 @@ export default function GuildDashboard() {
               </select>
             </div>
 
-            <div>
-              <label className="block text-xs font-medium text-gray-400 mb-1.5">
-                Mensaje de texto (fuera de la imagen)
-              </label>
+            <div className="form-group">
+              <label>Mensaje de texto</label>
               <textarea
                 rows={2}
                 value={config.message}
                 onChange={(e) => setConfig({ ...config, message: e.target.value })}
-                className="w-full bg-[#111214] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-pink-500"
+                style={{ resize: 'none' }}
               />
-              <span className="text-[11px] text-gray-500">Variables: {'{user}'}, {'{server}'}, {'{count}'}</span>
+              <span style={{ fontSize: 11, color: 'var(--muted)', marginTop: 6, display: 'inline-block' }}>
+                Variables: {'{user}'}, {'{server}'}, {'{count}'}
+              </span>
             </div>
 
-            <div>
-              <label className="block text-xs font-medium text-gray-400 mb-1.5">Título en la imagen</label>
+            <div className="form-group">
+              <label>Título en la imagen</label>
               <input
                 type="text"
                 value={config.cardTitle}
                 onChange={(e) => setConfig({ ...config, cardTitle: e.target.value })}
-                className="w-full bg-[#111214] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-pink-500"
               />
             </div>
 
-            <div>
-              <label className="block text-xs font-medium text-gray-400 mb-1.5">Subtítulo en la imagen</label>
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label>Subtítulo en la imagen</label>
               <input
                 type="text"
                 value={config.cardSubtitle}
                 onChange={(e) => setConfig({ ...config, cardSubtitle: e.target.value })}
-                className="w-full bg-[#111214] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-pink-500"
               />
             </div>
           </div>
 
-          {/* Columna 2: Apariencia y Colores */}
-          <div className="bg-[#18191c] p-6 rounded-2xl border border-white/5 space-y-5">
-            <h3 className="font-semibold text-white text-lg">Diseño de la Tarjeta</h3>
+          {/* Columna 2 */}
+          <div className="card">
+            <h3 style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', marginBottom: 20 }}>
+              🎨 Diseño de la Tarjeta
+            </h3>
 
-            <div>
-              <label className="block text-xs font-medium text-gray-400 mb-1.5">URL Imagen de Fondo (Opcional)</label>
+            <div className="form-group">
+              <label>URL Imagen de Fondo (opcional)</label>
               <input
                 type="url"
                 placeholder="https://i.imgur.com/..."
                 value={config.bgImage}
                 onChange={(e) => setConfig({ ...config, bgImage: e.target.value })}
-                className="w-full bg-[#111214] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-pink-500"
               />
             </div>
 
-            <div>
-              <label className="block text-xs font-medium text-gray-400 mb-1.5">
-                Oscuridad del fondo ({Math.round(config.overlayOpacity * 100)}%)
-              </label>
+            <div className="form-group">
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                <label style={{ marginBottom: 0 }}>Oscuridad del fondo</label>
+                <span style={{ fontSize: 12, color: 'var(--primary)', fontWeight: 600 }}>
+                  {Math.round(config.overlayOpacity * 100)}%
+                </span>
+              </div>
               <input
                 type="range"
                 min="0"
@@ -300,74 +546,136 @@ export default function GuildDashboard() {
                 step="0.05"
                 value={config.overlayOpacity}
                 onChange={(e) => setConfig({ ...config, overlayOpacity: parseFloat(e.target.value) })}
-                className="w-full accent-pink-500"
+                style={{ padding: 0, accentColor: 'var(--primary)' }}
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4 pt-2">
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: 12,
+              }}
+            >
               <div>
-                <label className="block text-xs font-medium text-gray-400 mb-1.5">Color de Fondo</label>
-                <div className="flex items-center gap-2 bg-[#111214] p-2 rounded-xl border border-white/10">
+                <label>Color de Fondo</label>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    background: 'var(--bg)',
+                    padding: 6,
+                    borderRadius: 8,
+                    border: '1px solid var(--border)',
+                  }}
+                >
                   <input
                     type="color"
                     value={config.bgColor}
                     onChange={(e) => setConfig({ ...config, bgColor: e.target.value })}
-                    className="w-8 h-8 rounded cursor-pointer bg-transparent"
+                    style={{ width: 28, height: 28, padding: 0, border: 'none', background: 'transparent', cursor: 'pointer' }}
                   />
-                  <span className="text-xs font-mono text-gray-300">{config.bgColor}</span>
+                  <span style={{ fontSize: 10, fontFamily: 'monospace', color: 'var(--muted)' }}>
+                    {config.bgColor}
+                  </span>
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-400 mb-1.5">Borde y Nombre</label>
-                <div className="flex items-center gap-2 bg-[#111214] p-2 rounded-xl border border-white/10">
+                <label>Borde y Nombre</label>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    background: 'var(--bg)',
+                    padding: 6,
+                    borderRadius: 8,
+                    border: '1px solid var(--border)',
+                  }}
+                >
                   <input
                     type="color"
                     value={config.borderColor}
                     onChange={(e) =>
                       setConfig({ ...config, borderColor: e.target.value, usernameColor: e.target.value })
                     }
-                    className="w-8 h-8 rounded cursor-pointer bg-transparent"
+                    style={{ width: 28, height: 28, padding: 0, border: 'none', background: 'transparent', cursor: 'pointer' }}
                   />
-                  <span className="text-xs font-mono text-gray-300">{config.borderColor}</span>
+                  <span style={{ fontSize: 10, fontFamily: 'monospace', color: 'var(--muted)' }}>
+                    {config.borderColor}
+                  </span>
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-400 mb-1.5">Color Título</label>
-                <div className="flex items-center gap-2 bg-[#111214] p-2 rounded-xl border border-white/10">
+                <label>Color Título</label>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    background: 'var(--bg)',
+                    padding: 6,
+                    borderRadius: 8,
+                    border: '1px solid var(--border)',
+                  }}
+                >
                   <input
                     type="color"
                     value={config.titleColor}
                     onChange={(e) => setConfig({ ...config, titleColor: e.target.value })}
-                    className="w-8 h-8 rounded cursor-pointer bg-transparent"
+                    style={{ width: 28, height: 28, padding: 0, border: 'none', background: 'transparent', cursor: 'pointer' }}
                   />
-                  <span className="text-xs font-mono text-gray-300">{config.titleColor}</span>
+                  <span style={{ fontSize: 10, fontFamily: 'monospace', color: 'var(--muted)' }}>
+                    {config.titleColor}
+                  </span>
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-400 mb-1.5">Color Subtítulo</label>
-                <div className="flex items-center gap-2 bg-[#111214] p-2 rounded-xl border border-white/10">
+                <label>Color Subtítulo</label>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    background: 'var(--bg)',
+                    padding: 6,
+                    borderRadius: 8,
+                    border: '1px solid var(--border)',
+                  }}
+                >
                   <input
                     type="color"
                     value={config.subtitleColor}
                     onChange={(e) => setConfig({ ...config, subtitleColor: e.target.value })}
-                    className="w-8 h-8 rounded cursor-pointer bg-transparent"
+                    style={{ width: 28, height: 28, padding: 0, border: 'none', background: 'transparent', cursor: 'pointer' }}
                   />
-                  <span className="text-xs font-mono text-gray-300">{config.subtitleColor}</span>
+                  <span style={{ fontSize: 10, fontFamily: 'monospace', color: 'var(--muted)' }}>
+                    {config.subtitleColor}
+                  </span>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Barra flotante de Guardar */}
-        <div className="flex justify-end pt-2">
+        {/* ===== Botón Guardar ===== */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 24 }}>
           <button
             onClick={handleSave}
             disabled={saving}
-            className="px-8 py-3 rounded-xl bg-gradient-to-r from-pink-600 to-rose-500 hover:from-pink-500 hover:to-rose-400 text-white font-semibold shadow-lg shadow-pink-500/25 transition disabled:opacity-50"
+            style={{
+              padding: '12px 28px',
+              borderRadius: 10,
+              background: 'linear-gradient(135deg, var(--primary), var(--primary-hover))',
+              boxShadow: '0 8px 24px rgba(255,105,180,0.3)',
+              fontSize: 13,
+              fontWeight: 700,
+              opacity: saving ? 0.6 : 1,
+            }}
           >
             {saving ? 'Guardando...' : '💾 Guardar Cambios'}
           </button>
