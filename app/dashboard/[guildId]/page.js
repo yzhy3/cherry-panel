@@ -24,7 +24,6 @@ export default function GuildDashboard() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
-  const [uploading, setUploading] = useState(false);
   const [channels, setChannels] = useState([]);
   const [guildInfo, setGuildInfo] = useState({ name: 'Mi Servidor', memberCount: 120, icon: null });
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -46,7 +45,7 @@ export default function GuildDashboard() {
 
   useEffect(() => {
     if (!guildId) return;
-    fetch(`/dashboard/${guildId}/welcome`)
+    fetch(`/api/bot/api/guilds/${guildId}/welcome`)
       .then((res) => res.json())
       .then((data) => {
         if (data.config) setConfig((prev) => ({ ...prev, ...data.config }));
@@ -75,7 +74,8 @@ export default function GuildDashboard() {
     return `https://cdn.discordapp.com/icons/${guildId}/${guildInfo.icon}.${ext}?size=128`;
   };
 
-  const handleImageUpload = async (file) => {
+  // 🔽 Subida de imagen a base64 (sin API)
+  const handleImageUpload = (file) => {
     if (!file) return;
 
     if (file.size > 5 * 1024 * 1024) {
@@ -83,32 +83,19 @@ export default function GuildDashboard() {
       return;
     }
 
-    setUploading(true);
-    const formData = new FormData();
-    formData.append('file', file);
-
-    try {
-      const res = await fetch(`/dashboard/${guildId}/welcome/upload`, {
-        method: 'POST',
-        body: formData,
-      });
-      const data = await res.json();
-      if (data.url) {
-        setConfig({ ...config, bgImage: data.url });
-      } else {
-        alert('❌ No se pudo subir la imagen');
-      }
-    } catch (err) {
-      console.error(err);
-      alert('❌ Error al subir la imagen');
-    } finally {
-      setUploading(false);
-    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setConfig((prev) => ({ ...prev, bgImage: e.target.result }));
+    };
+    reader.onerror = () => {
+      alert('❌ Error al leer la imagen');
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSave = async () => {
     setSaving(true);
-    await fetch(`dashboard/${guildId}/welcome`, {
+    await fetch(`/api/bot/api/guilds/${guildId}/welcome`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(config),
@@ -119,7 +106,7 @@ export default function GuildDashboard() {
 
   const handleTest = async () => {
     setTesting(true);
-    await fetch(`/dashboard/${guildId}/welcome/test`, {
+    await fetch(`/api/bot/api/guilds/${guildId}/welcome/test`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -855,7 +842,7 @@ export default function GuildDashboard() {
               🎨 Diseño de la Tarjeta
             </h3>
 
-            {/* 🔽 IMAGEN DE FONDO — SUBIDA A LA API */}
+            {/* 🔽 IMAGEN DE FONDO — BASE64 SIN API */}
             <div className="form-group">
               <label>Imagen de Fondo</label>
 
@@ -867,7 +854,6 @@ export default function GuildDashboard() {
                   handleImageUpload(e.target.files?.[0]);
                   e.target.value = '';
                 }}
-                disabled={uploading}
                 style={{ display: 'none' }}
               />
 
@@ -913,11 +899,7 @@ export default function GuildDashboard() {
                       whiteSpace: 'nowrap',
                     }}
                   >
-                    {uploading
-                      ? 'Subiendo...'
-                      : config.bgImage
-                      ? 'Imagen cargada ✓'
-                      : 'Ninguna imagen'}
+                    {config.bgImage ? 'Imagen cargada ✓' : 'Ninguna imagen'}
                   </div>
                   <div style={{ fontSize: 10, color: 'var(--muted)' }}>
                     PNG, JPG, WEBP o GIF · máx 5MB
@@ -929,21 +911,20 @@ export default function GuildDashboard() {
                   style={{
                     padding: '8px 12px',
                     borderRadius: 8,
-                    background: uploading ? 'var(--border)' : 'var(--primary)',
+                    background: 'var(--primary)',
                     color: '#fff',
                     fontSize: 12,
                     fontWeight: 600,
-                    cursor: uploading ? 'not-allowed' : 'pointer',
+                    cursor: 'pointer',
                     flexShrink: 0,
                     WebkitTapHighlightColor: 'transparent',
                     textShadow: '0 1px 2px rgba(0,0,0,0.3)',
-                    opacity: uploading ? 0.7 : 1,
                   }}
                 >
-                  {uploading ? '⏳' : 'Subir'}
+                  Subir
                 </label>
 
-                {config.bgImage && !uploading && (
+                {config.bgImage && (
                   <button
                     type="button"
                     onClick={() => setConfig({ ...config, bgImage: '' })}
@@ -1071,7 +1052,7 @@ export default function GuildDashboard() {
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 24 }}>
           <button
             onClick={handleSave}
-            disabled={saving || uploading}
+            disabled={saving}
             className="save-btn"
             style={{
               width: '100%',
@@ -1083,13 +1064,13 @@ export default function GuildDashboard() {
                 '0 8px 24px rgba(255,105,180,0.3), 0 4px 12px rgba(255,105,180,0.2), inset 0 1px 0 rgba(255,255,255,0.2)',
               fontSize: 14,
               fontWeight: 700,
-              opacity: saving || uploading ? 0.6 : 1,
+              opacity: saving ? 0.6 : 1,
               minHeight: 48,
               WebkitTapHighlightColor: 'transparent',
               textShadow: '0 1px 2px rgba(0,0,0,0.3)',
             }}
           >
-            {saving ? 'Guardando...' : uploading ? 'Esperando imagen...' : '💾 Guardar Cambios'}
+            {saving ? 'Guardando...' : '💾 Guardar Cambios'}
           </button>
         </div>
       </main>
