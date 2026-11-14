@@ -3,6 +3,19 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
+import { Inter, Poppins } from 'next/font/google';
+
+const inter = Inter({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  display: 'swap',
+});
+
+const poppins = Poppins({
+  subsets: ['latin'],
+  weight: ['600', '700', '800'],
+  display: 'swap',
+});
 
 export default function GuildDashboard() {
   const { guildId } = useParams();
@@ -12,7 +25,7 @@ export default function GuildDashboard() {
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [channels, setChannels] = useState([]);
-  const [guildInfo, setGuildInfo] = useState({ name: 'Mi Servidor', memberCount: 120 });
+  const [guildInfo, setGuildInfo] = useState({ name: 'Mi Servidor', memberCount: 120, icon: null });
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const [config, setConfig] = useState({
@@ -40,13 +53,13 @@ export default function GuildDashboard() {
         setGuildInfo({
           name: data.guildName || 'Servidor',
           memberCount: data.memberCount || 1,
+          icon: data.guildIcon || null,
         });
         setLoading(false);
       })
       .catch(() => setLoading(false));
   }, [guildId]);
 
-  // Bloquear scroll del body cuando el sidebar está abierto en móvil
   useEffect(() => {
     if (typeof document === 'undefined') return;
     document.body.style.overflow = sidebarOpen ? 'hidden' : '';
@@ -54,6 +67,12 @@ export default function GuildDashboard() {
       document.body.style.overflow = '';
     };
   }, [sidebarOpen]);
+
+  const getGuildIconUrl = () => {
+    if (!guildInfo.icon) return null;
+    const ext = guildInfo.icon.startsWith('a_') ? 'gif' : 'png';
+    return `https://cdn.discordapp.com/icons/${guildId}/${guildInfo.icon}.${ext}?size=128`;
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -90,6 +109,7 @@ export default function GuildDashboard() {
   if (loading) {
     return (
       <div
+        className={inter.className}
         style={{
           minHeight: '100dvh',
           background: 'var(--bg)',
@@ -107,15 +127,26 @@ export default function GuildDashboard() {
             width: 48,
             height: 48,
             borderRadius: 14,
-            background: 'linear-gradient(135deg, #ff69b4, #ff85c2)',
+            background: getGuildIconUrl()
+              ? 'transparent'
+              : 'linear-gradient(135deg, #ff69b4, #ff85c2)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             fontSize: 22,
             boxShadow: '0 8px 24px rgba(255,105,180,0.35)',
+            overflow: 'hidden',
           }}
         >
-          🍒
+          {getGuildIconUrl() ? (
+            <img
+              src={getGuildIconUrl()}
+              alt=""
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            />
+          ) : (
+            '🍒'
+          )}
         </div>
         <p style={{ color: 'var(--muted)', fontSize: 13 }}>Cargando panel de Cherry...</p>
       </div>
@@ -124,6 +155,7 @@ export default function GuildDashboard() {
 
   return (
     <div
+      className={inter.className}
       style={{
         minHeight: '100dvh',
         background: 'var(--bg)',
@@ -132,7 +164,7 @@ export default function GuildDashboard() {
         position: 'relative',
       }}
     >
-      {/* ========== OVERLAY MÓVIL ========== */}
+      {/* OVERLAY MÓVIL */}
       {sidebarOpen && (
         <div
           onClick={() => setSidebarOpen(false)}
@@ -147,8 +179,9 @@ export default function GuildDashboard() {
         />
       )}
 
-      {/* ========== SIDEBAR ========== */}
+      {/* SIDEBAR */}
       <aside
+        className="cherry-sidebar"
         style={{
           width: 250,
           background: 'var(--card)',
@@ -169,7 +202,6 @@ export default function GuildDashboard() {
           overflowY: 'auto',
           WebkitOverflowScrolling: 'touch',
         }}
-        className="cherry-sidebar"
       >
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
@@ -178,16 +210,27 @@ export default function GuildDashboard() {
                 width: 36,
                 height: 36,
                 borderRadius: 10,
-                background: 'linear-gradient(135deg, #ff69b4, #ff85c2)',
+                background: getGuildIconUrl()
+                  ? 'transparent'
+                  : 'linear-gradient(135deg, #ff69b4, #ff85c2)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 fontSize: 18,
                 boxShadow: '0 4px 14px rgba(255,105,180,0.35)',
                 flexShrink: 0,
+                overflow: 'hidden',
               }}
             >
-              🍒
+              {getGuildIconUrl() ? (
+                <img
+                  src={getGuildIconUrl()}
+                  alt=""
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
+              ) : (
+                '🍒'
+              )}
             </div>
             <div style={{ minWidth: 0, flex: 1 }}>
               <div style={{ fontSize: 14, fontWeight: 700 }}>Cherry</div>
@@ -283,8 +326,9 @@ export default function GuildDashboard() {
         </a>
       </aside>
 
-      {/* ========== MAIN ========== */}
+      {/* MAIN */}
       <main
+        className="cherry-main"
         style={{
           flex: 1,
           width: '100%',
@@ -297,17 +341,11 @@ export default function GuildDashboard() {
           paddingRight: 'max(16px, env(safe-area-inset-right))',
           minWidth: 0,
         }}
-        className="cherry-main"
       >
-        {/* ========== TOPBAR MÓVIL ========== */}
+        {/* TOPBAR MÓVIL */}
         <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 12,
-            marginBottom: 16,
-          }}
           className="mobile-topbar"
+          style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}
         >
           <button
             onClick={() => setSidebarOpen(true)}
@@ -357,13 +395,22 @@ export default function GuildDashboard() {
               fontSize: 14,
               fontWeight: 700,
               flexShrink: 0,
+              overflow: 'hidden',
             }}
           >
-            {session?.user?.name?.[0]?.toUpperCase() || '?'}
+            {session?.user?.image ? (
+              <img
+                src={session.user.image}
+                alt=""
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              />
+            ) : (
+              session?.user?.name?.[0]?.toUpperCase() || '?'
+            )}
           </div>
         </div>
 
-        {/* Header del módulo */}
+        {/* HEADER MÓDULO */}
         <div
           style={{
             display: 'flex',
@@ -375,7 +422,10 @@ export default function GuildDashboard() {
           }}
         >
           <div style={{ minWidth: 0 }}>
-            <h1 style={{ fontSize: 'clamp(20px, 4vw, 24px)', fontWeight: 700, marginBottom: 4 }}>
+            <h1
+              className={poppins.className}
+              style={{ fontSize: 'clamp(20px, 4vw, 24px)', fontWeight: 700, marginBottom: 4 }}
+            >
               👋 Sistema de Bienvenida
             </h1>
             <p style={{ fontSize: 13, color: 'var(--muted)' }}>
@@ -442,7 +492,7 @@ export default function GuildDashboard() {
           </label>
         </div>
 
-        {/* ===== Vista previa ===== */}
+        {/* VISTA PREVIA */}
         <div className="card" style={{ padding: 0, overflow: 'hidden', marginBottom: 20 }}>
           <div
             style={{
@@ -476,28 +526,33 @@ export default function GuildDashboard() {
           </div>
 
           <div style={{ padding: 12, background: 'rgba(0,0,0,0.25)' }}>
-            <div
-              style={{
-                background: '#313338',
-                borderRadius: 12,
-                padding: 12,
-              }}
-            >
+            <div style={{ background: '#313338', borderRadius: 12, padding: 12 }}>
               <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                 <div
                   style={{
                     width: 32,
                     height: 32,
                     borderRadius: '50%',
-                    background: 'linear-gradient(135deg, #ff69b4, #ff85c2)',
+                    background: getGuildIconUrl()
+                      ? 'transparent'
+                      : 'linear-gradient(135deg, #ff69b4, #ff85c2)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     fontSize: 13,
                     flexShrink: 0,
+                    overflow: 'hidden',
                   }}
                 >
-                  🍒
+                  {getGuildIconUrl() ? (
+                    <img
+                      src={getGuildIconUrl()}
+                      alt=""
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                  ) : (
+                    '🍒'
+                  )}
                 </div>
                 <div style={{ minWidth: 0, flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -515,25 +570,33 @@ export default function GuildDashboard() {
                       BOT
                     </span>
                   </div>
-                  <p style={{ fontSize: 13, color: '#e0e0e0', margin: '4px 0 0', wordBreak: 'break-word' }}>
+                  <p
+                    style={{
+                      fontSize: 13,
+                      color: '#e0e0e0',
+                      margin: '4px 0 0',
+                      wordBreak: 'break-word',
+                    }}
+                  >
                     {formatPreviewText(config.message)}
                   </p>
 
-                  {/* Tarjeta canvas */}
+                  {/* TARJETA ESTILO KOYA */}
                   <div
+                    className={poppins.className}
                     style={{
                       position: 'relative',
                       marginTop: 12,
                       width: '100%',
-                      aspectRatio: '600 / 260',
-                      borderRadius: 12,
+                      aspectRatio: '600 / 280',
+                      borderRadius: 10,
                       overflow: 'hidden',
                       display: 'flex',
                       flexDirection: 'column',
                       alignItems: 'center',
                       justifyContent: 'center',
                       textAlign: 'center',
-                      padding: 16,
+                      padding: 20,
                       backgroundColor: config.bgColor,
                       backgroundImage: config.bgImage ? `url(${config.bgImage})` : 'none',
                       backgroundSize: 'cover',
@@ -546,7 +609,7 @@ export default function GuildDashboard() {
                       style={{
                         position: 'absolute',
                         inset: 0,
-                        background: `rgba(0,0,0,${config.overlayOpacity})`,
+                        background: `rgba(0,0,0,${config.overlayOpacity * 0.7})`,
                       }}
                     />
                     <div
@@ -560,48 +623,59 @@ export default function GuildDashboard() {
                       }}
                     >
                       <img
-                        src={session?.user?.image || 'https://cdn.discordapp.com/embed/avatars/0.png'}
+                        src={
+                          session?.user?.image ||
+                          'https://cdn.discordapp.com/embed/avatars/0.png'
+                        }
                         alt="Avatar"
                         style={{
-                          width: 'clamp(56px, 14vw, 88px)',
-                          height: 'clamp(56px, 14vw, 88px)',
+                          width: 'clamp(56px, 13vw, 84px)',
+                          height: 'clamp(56px, 13vw, 84px)',
                           borderRadius: '50%',
                           objectFit: 'cover',
-                          marginBottom: 8,
+                          marginBottom: 10,
                           border: `3px solid ${config.borderColor}`,
+                          background: '#2b2d31',
                         }}
                       />
                       <h4
+                        className={poppins.className}
                         style={{
-                          fontSize: 'clamp(14px, 3.5vw, 22px)',
+                          fontSize: 'clamp(15px, 3.5vw, 24px)',
                           fontWeight: 800,
                           textTransform: 'uppercase',
-                          letterSpacing: '0.02em',
+                          letterSpacing: '0.06em',
                           color: config.titleColor,
                           margin: 0,
-                          lineHeight: 1.1,
+                          lineHeight: 1.15,
                           wordBreak: 'break-word',
+                          textShadow: '0 2px 10px rgba(0,0,0,0.55)',
                         }}
                       >
                         {formatPreviewText(config.cardTitle)}
                       </h4>
                       <p
+                        className={poppins.className}
                         style={{
-                          fontSize: 'clamp(12px, 2.8vw, 16px)',
+                          fontSize: 'clamp(12px, 2.8vw, 17px)',
                           fontWeight: 700,
-                          marginTop: 2,
+                          marginTop: 4,
                           color: config.usernameColor,
                           wordBreak: 'break-word',
+                          textShadow: '0 1px 6px rgba(0,0,0,0.55)',
                         }}
                       >
                         {session?.user?.name || 'Usuario#0000'}
                       </p>
                       <p
+                        className={inter.className}
                         style={{
                           fontSize: 'clamp(10px, 2.4vw, 13px)',
-                          marginTop: 4,
+                          fontWeight: 500,
+                          marginTop: 6,
                           color: config.subtitleColor,
                           wordBreak: 'break-word',
+                          opacity: 0.95,
                         }}
                       >
                         {formatPreviewText(config.cardSubtitle)}
@@ -614,7 +688,7 @@ export default function GuildDashboard() {
           </div>
         </div>
 
-        {/* ===== Formularios ===== */}
+        {/* FORMULARIOS */}
         <div
           style={{
             display: 'grid',
@@ -622,18 +696,16 @@ export default function GuildDashboard() {
             gap: 16,
           }}
         >
-          {/* Columna 1 */}
           <div className="card">
             <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 20 }}>
               💬 Canal y Mensajes
             </h3>
-
             <div className="form-group">
               <label>Canal de Bienvenida</label>
               <select
                 value={config.channelId}
                 onChange={(e) => setConfig({ ...config, channelId: e.target.value })}
-                style={{ fontSize: 16 }} // Evita zoom en iOS
+                style={{ fontSize: 16 }}
               >
                 <option value="">Selecciona un canal...</option>
                 {channels.map((ch) => (
@@ -643,20 +715,25 @@ export default function GuildDashboard() {
                 ))}
               </select>
             </div>
-
             <div className="form-group">
               <label>Mensaje de texto</label>
               <textarea
                 rows={2}
                 value={config.message}
                 onChange={(e) => setConfig({ ...config, message: e.target.value })}
-                style={{ resize: 'none', fontSize: 16 }} // Evita zoom iOS
+                style={{ resize: 'none', fontSize: 16 }}
               />
-              <span style={{ fontSize: 11, color: 'var(--muted)', marginTop: 6, display: 'inline-block' }}>
+              <span
+                style={{
+                  fontSize: 11,
+                  color: 'var(--muted)',
+                  marginTop: 6,
+                  display: 'inline-block',
+                }}
+              >
                 Variables: {'{user}'}, {'{server}'}, {'{count}'}
               </span>
             </div>
-
             <div className="form-group">
               <label>Título en la imagen</label>
               <input
@@ -666,7 +743,6 @@ export default function GuildDashboard() {
                 style={{ fontSize: 16 }}
               />
             </div>
-
             <div className="form-group" style={{ marginBottom: 0 }}>
               <label>Subtítulo en la imagen</label>
               <input
@@ -678,12 +754,10 @@ export default function GuildDashboard() {
             </div>
           </div>
 
-          {/* Columna 2 */}
           <div className="card">
             <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 20 }}>
               🎨 Diseño de la Tarjeta
             </h3>
-
             <div className="form-group">
               <label>URL Imagen de Fondo (opcional)</label>
               <input
@@ -694,11 +768,14 @@ export default function GuildDashboard() {
                 style={{ fontSize: 16 }}
               />
             </div>
-
             <div className="form-group">
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+              <div
+                style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}
+              >
                 <label style={{ marginBottom: 0 }}>Oscuridad del fondo</label>
-                <span style={{ fontSize: 12, color: 'var(--primary)', fontWeight: 600 }}>
+                <span
+                  style={{ fontSize: 12, color: 'var(--primary)', fontWeight: 600 }}
+                >
                   {Math.round(config.overlayOpacity * 100)}%
                 </span>
               </div>
@@ -708,11 +785,12 @@ export default function GuildDashboard() {
                 max="0.9"
                 step="0.05"
                 value={config.overlayOpacity}
-                onChange={(e) => setConfig({ ...config, overlayOpacity: parseFloat(e.target.value) })}
+                onChange={(e) =>
+                  setConfig({ ...config, overlayOpacity: parseFloat(e.target.value) })
+                }
                 style={{ padding: 0, accentColor: 'var(--primary)', minHeight: 36 }}
               />
             </div>
-
             <div
               style={{
                 display: 'grid',
@@ -784,11 +862,11 @@ export default function GuildDashboard() {
           </div>
         </div>
 
-        {/* ===== Botón Guardar ===== */}
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 24 }}>
           <button
             onClick={handleSave}
             disabled={saving}
+            className="save-btn"
             style={{
               width: '100%',
               maxWidth: 320,
@@ -802,16 +880,13 @@ export default function GuildDashboard() {
               minHeight: 48,
               WebkitTapHighlightColor: 'transparent',
             }}
-            className="save-btn"
           >
             {saving ? 'Guardando...' : '💾 Guardar Cambios'}
           </button>
         </div>
       </main>
 
-      {/* ========== ESTILOS RESPONSIVE + SAFE AREA ========== */}
       <style jsx global>{`
-        /* Desktop: sidebar siempre visible */
         @media (min-width: 768px) {
           .cherry-sidebar {
             position: sticky !important;
@@ -832,8 +907,6 @@ export default function GuildDashboard() {
             width: auto !important;
           }
         }
-
-        /* Móvil: sidebar deslizable */
         @media (max-width: 767px) {
           .cherry-main {
             padding: 16px !important;
@@ -843,15 +916,11 @@ export default function GuildDashboard() {
             padding-right: max(16px, env(safe-area-inset-right)) !important;
           }
         }
-
-        /* Fix iOS: 100dvh en Safari antiguo */
         @supports (-webkit-touch-callout: none) {
           .cherry-sidebar {
             height: -webkit-fill-available;
           }
         }
-
-        /* Prevenir zoom automático en iOS en inputs (font-size >= 16px) */
         @media (max-width: 767px) {
           input,
           select,
@@ -862,25 +931,13 @@ export default function GuildDashboard() {
             font-size: initial !important;
           }
         }
-
-        /* Scroll suave táctil */
         * {
           -webkit-overflow-scrolling: touch;
         }
-
-        /* Previene el highlight azul del tap en Android/iOS */
         button,
         a,
         input[type='checkbox'] {
           -webkit-tap-highlight-color: transparent;
-        }
-
-        /* Scrollbar móvil más fina */
-        @media (max-width: 767px) {
-          ::-webkit-scrollbar {
-            width: 4px;
-            height: 4px;
-          }
         }
       `}</style>
     </div>
