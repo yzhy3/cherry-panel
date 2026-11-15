@@ -23,7 +23,7 @@ export default function Home() {
       style={{
         width: size,
         height: size,
-        borderRadius: size > 40 ? 16 : 10,
+        borderRadius: size > 60 ? 16 : 10,
         background: bot?.avatar
           ? 'transparent'
           : 'linear-gradient(135deg, #ff69b4, #ff85c2)',
