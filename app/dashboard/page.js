@@ -13,13 +13,33 @@ export default function DashboardPage() {
   const [checking, setChecking] = useState(null);
   const [debugError, setDebugError] = useState(null);
   const [bot, setBot] = useState(null);
+  const [clientId, setClientId] = useState(null);
 
   const isSnowflake = (v) => typeof v === 'string' && /^[0-9]{17,20}$/.test(String(v).trim());
 
+  // 1) Client ID desde el servidor (DISCORD_CLIENT_ID del .env) — no depende del bot online
+  // 2) Info del bot (avatar) si la API responde
   useEffect(() => {
+    fetch('/api/config')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data?.clientId && isSnowflake(data.clientId)) {
+          setClientId(data.clientId);
+        }
+      })
+      .catch(() => {});
+
     fetch('/api/bot/api/bot')
       .then((r) => (r.ok ? r.json() : null))
-      .then((data) => { if (data) setBot(data); })
+      .then((data) => {
+        if (data) {
+          setBot(data);
+          // Si no teníamos clientId del env, usar el del bot
+          if (data.id && isSnowflake(data.id)) {
+            setClientId((prev) => prev || data.id);
+          }
+        }
+      })
       .catch(() => {});
   }, []);
 
@@ -62,17 +82,11 @@ export default function DashboardPage() {
       .finally(() => setLoading(false));
   }, [session, status]);
 
-  // Client ID para invitar: id del bot (Application ID) cuando el bot está online
-  const getClientId = () => {
-    if (isSnowflake(bot?.id)) return bot.id;
-    return null;
-  };
-
   const getInviteUrl = (guildId) => {
-    const clientId = getClientId();
-    if (!clientId) return null;
+    const id = clientId || (bot?.id && isSnowflake(bot.id) ? bot.id : null);
+    if (!id) return null;
     const perms = '8';
-    let url = `https://discord.com/oauth2/authorize?client_id=${clientId}&permissions=${perms}&scope=bot%20applications.commands`;
+    let url = `https://discord.com/oauth2/authorize?client_id=${id}&permissions=${perms}&scope=bot%20applications.commands`;
     if (guildId && isSnowflake(String(guildId))) {
       url += `&guild_id=${guildId}&disable_guild_select=true`;
     }
@@ -86,18 +100,20 @@ export default function DashboardPage() {
       // ¿Está el bot en este servidor?
       let present = false;
 
-      let res = await fetch(`/api/bot/api/guilds/${guild.id}/status`);
-      if (res.ok) {
-        const data = await res.json();
-        if (data.present) present = true;
-      } else {
-        // Fallback
-        res = await fetch(`/api/bot/api/guilds/${guild.id}/avisos`);
-        if (res.ok) present = true;
+      try {
+        let res = await fetch(`/api/bot/api/guilds/${guild.id}/status`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.present) present = true;
+        } else {
+          res = await fetch(`/api/bot/api/guilds/${guild.id}/avisos`);
+          if (res.ok) present = true;
+        }
+      } catch {
+        // API no alcanzable → tratamos como no presente
       }
 
       if (present) {
-        // Ya está → entrar al panel
         router.push(`/dashboard/${guild.id}`);
         return;
       }
@@ -106,15 +122,8 @@ export default function DashboardPage() {
       const invite = getInviteUrl(guild.id);
       if (invite) {
         window.open(invite, '_blank', 'noopener,noreferrer');
-      } else {
-        // Bot offline y sin client id: intentar de todas formas con lo que haya
-        alert('El bot no está online ahora. Enciéndelo e inténtalo de nuevo, o añádelo manualmente desde el Developer Portal.');
       }
-    } catch {
-      const invite = getInviteUrl(guild.id);
-      if (invite) {
-        window.open(invite, '_blank', 'noopener,noreferrer');
-      }
+      // Si no hay clientId, no hacemos nada ruidoso; el usuario puede añadir el bot manualmente
     } finally {
       setChecking(null);
     }
