@@ -17,19 +17,16 @@ const poppins = Poppins({
   display: 'swap',
 });
 
-export default function GuildDashboard() {
-  const { guildId } = useParams();
-  const { data: session } = useSession();
+const AVISO_TYPES = [
+  { id: 'entrada', label: 'Entrada', icon: '👋', desc: 'Mensaje cuando un miembro se une' },
+  { id: 'salida', label: 'Salida', icon: '🚪', desc: 'Mensaje cuando un miembro se va' },
+  { id: 'ban', label: 'Ban', icon: '🔨', desc: 'Mensaje cuando alguien es baneado' },
+  { id: 'boost', label: 'Boost', icon: '🚀', desc: 'Mensaje cuando alguien impulsa el servidor' },
+];
 
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [testing, setTesting] = useState(false);
-  const [channels, setChannels] = useState([]);
-  const [guildInfo, setGuildInfo] = useState({ name: 'Mi Servidor', memberCount: 120, icon: null });
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  const [config, setConfig] = useState({
-    enabled: true,
+const DEFAULT_CONFIGS = {
+  entrada: {
+    enabled: false,
     channelId: '',
     message: '¡Hola {user}, bienvenido/a a **{server}**!',
     cardTitle: '¡BIENVENIDO!',
@@ -41,14 +38,53 @@ export default function GuildDashboard() {
     usernameColor: '#ff5c8a',
     subtitleColor: '#d1d5db',
     overlayOpacity: 0.55,
-  });
+  },
+  salida: {
+    enabled: false,
+    channelId: '',
+    message: '👋 **{user}** ha salido del servidor.',
+  },
+  ban: {
+    enabled: false,
+    channelId: '',
+    message: '🔨 **{user}** ha sido baneado del servidor.',
+  },
+  boost: {
+    enabled: false,
+    channelId: '',
+    message: '🚀 ¡**{user}** ha impulsado el servidor! ¡Gracias por el boost!',
+  },
+};
+
+export default function GuildDashboard() {
+  const { guildId } = useParams();
+  const { data: session } = useSession();
+
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [channels, setChannels] = useState([]);
+  const [guildInfo, setGuildInfo] = useState({ name: 'Mi Servidor', memberCount: 120, icon: null });
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [avisosOpen, setAvisosOpen] = useState(true);
+  const [activeType, setActiveType] = useState('entrada');
+  const [configs, setConfigs] = useState({ ...DEFAULT_CONFIGS });
+
+  const config = configs[activeType] || DEFAULT_CONFIGS[activeType];
 
   useEffect(() => {
     if (!guildId) return;
-    fetch(`/api/bot/api/guilds/${guildId}/welcome`)
+    fetch(`/api/bot/api/guilds/${guildId}/avisos`)
       .then((res) => res.json())
       .then((data) => {
-        if (data.config) setConfig((prev) => ({ ...prev, ...data.config }));
+        if (data.config) {
+          setConfigs((prev) => ({
+            entrada: { ...DEFAULT_CONFIGS.entrada, ...(data.config.entrada || {}) },
+            salida: { ...DEFAULT_CONFIGS.salida, ...(data.config.salida || {}) },
+            ban: { ...DEFAULT_CONFIGS.ban, ...(data.config.ban || {}) },
+            boost: { ...DEFAULT_CONFIGS.boost, ...(data.config.boost || {}) },
+          }));
+        }
         if (data.channels) setChannels(data.channels);
         setGuildInfo({
           name: data.guildName || 'Servidor',
@@ -74,127 +110,83 @@ export default function GuildDashboard() {
     return `https://cdn.discordapp.com/icons/${guildId}/${guildInfo.icon}.${ext}?size=128`;
   };
 
-  // 🔽 Subida de imagen a base64 (sin API)
+  const updateConfig = (key, value) => {
+    setConfigs((prev) => ({
+      ...prev,
+      [activeType]: { ...prev[activeType], [key]: value },
+    }));
+  };
+
   const handleImageUpload = (file) => {
     if (!file) return;
-
     if (file.size > 5 * 1024 * 1024) {
       alert('⚠️ La imagen no puede superar 5MB');
       return;
     }
-
     const reader = new FileReader();
     reader.onload = (e) => {
-      setConfig((prev) => ({ ...prev, bgImage: e.target.result }));
+      updateConfig('bgImage', e.target.result);
     };
-    reader.onerror = () => {
-      alert('❌ Error al leer la imagen');
-    };
+    reader.onerror = () => alert('❌ Error al leer la imagen');
     reader.readAsDataURL(file);
   };
 
   const handleSave = async () => {
     setSaving(true);
-    await fetch(`/api/bot/api/guilds/${guildId}/welcome`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(config),
-    });
+    try {
+      await fetch(`/api/bot/api/guilds/${guildId}/avisos/${activeType}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(configs[activeType]),
+      });
+      alert('✅ Configuración guardada y sincronizada con Cherry.');
+    } catch (e) {
+      alert('❌ Error al guardar');
+    }
     setSaving(false);
-    alert('✅ Configuración guardada y sincronizada con Cherry.');
   };
 
   const handleTest = async () => {
     setTesting(true);
-    await fetch(`/api/bot/api/guilds/${guildId}/welcome/test`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        userId: session?.user?.id || session?.user?.sub,
-        config,
-      }),
-    });
+    try {
+      await fetch(`/api/bot/api/guilds/${guildId}/avisos/${activeType}/test`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: session?.user?.id || session?.user?.sub,
+          config: configs[activeType],
+        }),
+      });
+      alert('🚀 ¡Mensaje de prueba enviado a Discord!');
+    } catch (e) {
+      alert('❌ Error al enviar prueba');
+    }
     setTesting(false);
-    alert('🚀 ¡Mensaje de bienvenida de prueba enviado a Discord!');
   };
 
   const formatPreviewText = (text) => {
     return (text || '')
-      .replace('{user}', session?.user?.name || 'Usuario')
-      .replace('{server}', guildInfo.name)
-      .replace('{count}', guildInfo.memberCount);
+      .replace(/{user}/g, session?.user?.name || 'Usuario')
+      .replace(/{username}/g, session?.user?.name || 'Usuario')
+      .replace(/{server}/g, guildInfo.name)
+      .replace(/{count}/g, guildInfo.memberCount);
   };
+
+  const currentTypeInfo = AVISO_TYPES.find((t) => t.id === activeType) || AVISO_TYPES[0];
 
   if (loading) {
     return (
-      <div
-        className={inter.className}
-        style={{
-          minHeight: '100dvh',
-          background: 'var(--bg)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexDirection: 'column',
-          gap: 16,
-          paddingTop: 'env(safe-area-inset-top)',
-          paddingBottom: 'env(safe-area-inset-bottom)',
-        }}
-      >
-        <div
-          style={{
-            width: 48,
-            height: 48,
-            borderRadius: 14,
-            background: getGuildIconUrl()
-              ? 'transparent'
-              : 'linear-gradient(135deg, #ff69b4, #ff85c2)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: 22,
-            boxShadow: '0 8px 24px rgba(255,105,180,0.35)',
-            overflow: 'hidden',
-          }}
-        >
-          {getGuildIconUrl() ? (
-            <img
-              src={getGuildIconUrl()}
-              alt=""
-              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-            />
-          ) : (
-            '🍒'
-          )}
-        </div>
+      <div className={inter.className} style={{ minHeight: '100dvh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 16 }}>
+        <div style={{ width: 48, height: 48, borderRadius: 14, background: 'linear-gradient(135deg, #ff69b4, #ff85c2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, boxShadow: '0 8px 24px rgba(255,105,180,0.35)' }}>🍒</div>
         <p style={{ color: 'var(--muted)', fontSize: 13 }}>Cargando panel de Cherry...</p>
       </div>
     );
   }
 
   return (
-    <div
-      className={inter.className}
-      style={{
-        minHeight: '100dvh',
-        background: 'var(--bg)',
-        color: 'var(--text)',
-        display: 'flex',
-        position: 'relative',
-      }}
-    >
+    <div className={inter.className} style={{ minHeight: '100dvh', background: 'var(--bg)', color: 'var(--text)', display: 'flex', position: 'relative' }}>
       {sidebarOpen && (
-        <div
-          onClick={() => setSidebarOpen(false)}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.6)',
-            zIndex: 40,
-            backdropFilter: 'blur(2px)',
-            WebkitBackdropFilter: 'blur(2px)',
-          }}
-        />
+        <div onClick={() => setSidebarOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 40, backdropFilter: 'blur(2px)' }} />
       )}
 
       {/* SIDEBAR */}
@@ -218,859 +210,320 @@ export default function GuildDashboard() {
           transition: 'transform 0.25s ease',
           zIndex: 50,
           overflowY: 'auto',
-          WebkitOverflowScrolling: 'touch',
           boxShadow: '4px 0 24px rgba(0,0,0,0.4)',
         }}
       >
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-            <div
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: 10,
-                background: getGuildIconUrl()
-                  ? 'transparent'
-                  : 'linear-gradient(135deg, #ff69b4, #ff85c2)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 18,
-                boxShadow: '0 4px 14px rgba(255,105,180,0.35)',
-                flexShrink: 0,
-                overflow: 'hidden',
-              }}
-            >
-              {getGuildIconUrl() ? (
-                <img
-                  src={getGuildIconUrl()}
-                  alt=""
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                />
-              ) : (
-                '🍒'
-              )}
+            <div style={{ width: 36, height: 36, borderRadius: 10, background: getGuildIconUrl() ? 'transparent' : 'linear-gradient(135deg, #ff69b4, #ff85c2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, overflow: 'hidden' }}>
+              {getGuildIconUrl() ? <img src={getGuildIconUrl()} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '🍒'}
             </div>
-            <div style={{ minWidth: 0, flex: 1 }}>
-              <div style={{ fontSize: 14, fontWeight: 700 }}>Cherry</div>
-              <div
-                style={{
-                  fontSize: 11,
-                  color: 'var(--muted)',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                  maxWidth: 140,
-                }}
-              >
-                {guildInfo.name}
-              </div>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{guildInfo.name}</div>
+              <div style={{ fontSize: 11, color: 'var(--muted)' }}>Cherry Panel</div>
             </div>
-            <button
-              onClick={() => setSidebarOpen(false)}
-              aria-label="Cerrar menú"
-              style={{
-                background: 'transparent',
-                border: 'none',
-                color: 'var(--muted)',
-                fontSize: 22,
-                cursor: 'pointer',
-                padding: 4,
-                lineHeight: 1,
-              }}
-            >
-              ✕
-            </button>
           </div>
 
-          <p
-            style={{
-              fontSize: 10,
-              fontWeight: 700,
-              color: 'var(--muted)',
-              textTransform: 'uppercase',
-              letterSpacing: '0.1em',
-              marginBottom: 10,
-              padding: '0 8px',
-            }}
-          >
-            Módulos
-          </p>
-
           <nav>
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-                padding: '12px',
-                borderRadius: 8,
-                background: 'rgba(255,105,180,0.15)',
-                color: 'var(--primary)',
-                fontWeight: 600,
-                fontSize: 14,
-                cursor: 'pointer',
-                boxShadow: '0 2px 8px rgba(255,105,180,0.15)',
-              }}
-            >
-              <span>👋</span>
-              <span>Bienvenidas</span>
-              <span
-                style={{
-                  marginLeft: 'auto',
-                  width: 6,
-                  height: 6,
-                  borderRadius: '50%',
-                  background: 'var(--primary)',
-                  boxShadow: '0 0 8px var(--primary)',
-                }}
-              />
+            {/* Mensajería section */}
+            <div style={{ marginBottom: 8 }}>
+              <div
+                onClick={() => setAvisosOpen(!avisosOpen)}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', color: 'var(--muted)', fontSize: 12, fontWeight: 600, cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '0.04em' }}
+              >
+                <span>Mensajería</span>
+                <span style={{ fontSize: 10 }}>{avisosOpen ? '▾' : '▸'}</span>
+              </div>
+
+              {avisosOpen && (
+                <div style={{ marginLeft: 8, borderLeft: '1px solid var(--border)', paddingLeft: 8 }}>
+                  <div
+                    onClick={() => { setActiveType('entrada'); setSidebarOpen(false); }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 10,
+                      padding: '10px 12px',
+                      borderRadius: 8,
+                      background: activeType === 'entrada' ? 'rgba(255,105,180,0.15)' : 'transparent',
+                      color: activeType === 'entrada' ? 'var(--primary)' : 'var(--text)',
+                      fontWeight: activeType === 'entrada' ? 600 : 500,
+                      fontSize: 14,
+                      cursor: 'pointer',
+                      marginBottom: 2,
+                    }}
+                  >
+                    <span>📢</span>
+                    <span>Avisos</span>
+                    {activeType === 'entrada' && <span style={{ marginLeft: 'auto', width: 6, height: 6, borderRadius: '50%', background: 'var(--primary)' }} />}
+                  </div>
+
+                  {/* Sub items under Avisos */}
+                  <div style={{ marginLeft: 12, borderLeft: '1px solid var(--border)', paddingLeft: 8, marginTop: 4 }}>
+                    {AVISO_TYPES.map((t) => (
+                      <div
+                        key={t.id}
+                        onClick={() => { setActiveType(t.id); setSidebarOpen(false); }}
+                        style={{
+                          padding: '8px 12px',
+                          borderRadius: 6,
+                          fontSize: 13,
+                          color: activeType === t.id ? 'var(--primary)' : 'var(--muted)',
+                          fontWeight: activeType === t.id ? 600 : 400,
+                          cursor: 'pointer',
+                          background: activeType === t.id ? 'rgba(255,105,180,0.08)' : 'transparent',
+                        }}
+                      >
+                        {t.label}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </nav>
         </div>
 
-        <a
-          href="/dashboard"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            padding: '12px',
-            borderRadius: 8,
-            fontSize: 13,
-            color: 'var(--muted)',
-            marginTop: 16,
-          }}
-        >
+        <a href="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px', borderRadius: 8, fontSize: 13, color: 'var(--muted)', marginTop: 16 }}>
           ← Cambiar de servidor
         </a>
       </aside>
 
       {/* MAIN */}
-      <main
-        className="cherry-main"
-        style={{
-          flex: 1,
-          width: '100%',
-          maxWidth: 1100,
-          margin: '0 auto',
-          padding: '16px',
-          paddingTop: 'calc(16px + env(safe-area-inset-top))',
-          paddingBottom: 'calc(16px + env(safe-area-inset-bottom))',
-          paddingLeft: 'max(16px, env(safe-area-inset-left))',
-          paddingRight: 'max(16px, env(safe-area-inset-right))',
-          minWidth: 0,
-        }}
-      >
+      <main className="cherry-main" style={{ flex: 1, width: '100%', maxWidth: 1100, margin: '0 auto', padding: '16px', paddingTop: 'calc(16px + env(safe-area-inset-top))', paddingBottom: 'calc(16px + env(safe-area-inset-bottom))', minWidth: 0 }}>
         {/* TOPBAR MÓVIL */}
-        <div
-          className="mobile-topbar"
-          style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}
-        >
-          <button
-            onClick={() => setSidebarOpen(true)}
-            aria-label="Abrir menú"
-            style={{
-              background: 'var(--card)',
-              border: '1px solid var(--border)',
-              borderRadius: 10,
-              color: 'var(--text)',
-              width: 42,
-              height: 42,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              fontSize: 20,
-              padding: 0,
-              flexShrink: 0,
-              WebkitTapHighlightColor: 'transparent',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
-            }}
-          >
+        <div className="mobile-topbar" style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+          <button onClick={() => setSidebarOpen(true)} aria-label="Abrir menú" style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 10, color: 'var(--text)', width: 42, height: 42, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 20, padding: 0, flexShrink: 0 }}>
             ☰
           </button>
           <div style={{ minWidth: 0, flex: 1 }}>
-            <div
-              style={{
-                fontSize: 12,
-                color: 'var(--muted)',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {guildInfo.name}
-            </div>
-            <div style={{ fontSize: 14, fontWeight: 700 }}>Bienvenidas</div>
-          </div>
-          <div
-            style={{
-              width: 36,
-              height: 36,
-              borderRadius: '50%',
-              background: 'linear-gradient(135deg, #ff69b4, #ff85c2)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 14,
-              fontWeight: 700,
-              flexShrink: 0,
-              overflow: 'hidden',
-              boxShadow: '0 4px 12px rgba(255,105,180,0.3)',
-            }}
-          >
-            {session?.user?.image ? (
-              <img
-                src={session.user.image}
-                alt=""
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-              />
-            ) : (
-              session?.user?.name?.[0]?.toUpperCase() || '?'
-            )}
+            <div style={{ fontSize: 12, color: 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{guildInfo.name}</div>
+            <div style={{ fontSize: 14, fontWeight: 700 }}>Avisos · {currentTypeInfo.label}</div>
           </div>
         </div>
 
-        {/* HEADER MÓDULO */}
-        <div
-          style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: 16,
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: 20,
-          }}
-        >
+        {/* HEADER */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <div style={{ minWidth: 0 }}>
-            <h1
-              className={poppins.className}
-              style={{
-                fontSize: 'clamp(20px, 4vw, 24px)',
-                fontWeight: 700,
-                marginBottom: 4,
-                textShadow: '0 2px 8px rgba(0,0,0,0.3)',
-              }}
-            >
-              👋 Sistema de Bienvenida
+            <h1 className={poppins.className} style={{ fontSize: 'clamp(20px, 4vw, 24px)', fontWeight: 700, marginBottom: 4 }}>
+              {currentTypeInfo.icon} Aviso de {currentTypeInfo.label}
             </h1>
-            <p style={{ fontSize: 13, color: 'var(--muted)' }}>
-              Recibe a los nuevos miembros con una tarjeta personalizada.
-            </p>
+            <p style={{ fontSize: 13, color: 'var(--muted)' }}>{currentTypeInfo.desc}</p>
           </div>
 
-          <label
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 12,
-              cursor: 'pointer',
-              background: 'var(--card)',
-              border: '1px solid var(--border)',
-              borderRadius: 12,
-              padding: '10px 16px',
-              margin: 0,
-              WebkitTapHighlightColor: 'transparent',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
-            }}
-          >
-            <span style={{ fontSize: 12, fontWeight: 600 }}>
-              {config.enabled ? 'Activado' : 'Desactivado'}
-            </span>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 12, padding: '10px 16px', margin: 0 }}>
+            <span style={{ fontSize: 12, fontWeight: 600 }}>{config.enabled ? 'Activado' : 'Desactivado'}</span>
             <div style={{ position: 'relative', width: 44, height: 26 }}>
               <input
                 type="checkbox"
-                checked={config.enabled}
-                onChange={(e) => setConfig({ ...config, enabled: e.target.checked })}
-                style={{
-                  opacity: 0,
-                  width: '100%',
-                  height: '100%',
-                  margin: 0,
-                  cursor: 'pointer',
-                  position: 'absolute',
-                  zIndex: 2,
-                  inset: 0,
-                }}
+                checked={!!config.enabled}
+                onChange={(e) => updateConfig('enabled', e.target.checked)}
+                style={{ opacity: 0, width: '100%', height: '100%', margin: 0, cursor: 'pointer', position: 'absolute', zIndex: 2, inset: 0 }}
               />
-              <div
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  borderRadius: 999,
-                  background: config.enabled ? 'var(--primary)' : 'var(--border)',
-                  transition: 'background 0.2s',
-                  boxShadow: config.enabled
-                    ? '0 0 12px rgba(255,105,180,0.5)'
-                    : 'inset 0 1px 2px rgba(0,0,0,0.3)',
-                }}
-              />
-              <div
-                style={{
-                  position: 'absolute',
-                  top: 3,
-                  left: config.enabled ? 21 : 3,
-                  width: 20,
-                  height: 20,
-                  borderRadius: '50%',
-                  background: '#fff',
-                  transition: 'left 0.2s',
-                  boxShadow: '0 2px 6px rgba(0,0,0,0.35)',
-                }}
-              />
+              <div style={{ width: '100%', height: '100%', borderRadius: 999, background: config.enabled ? 'var(--primary)' : 'var(--border)', transition: 'background 0.2s' }} />
+              <div style={{ position: 'absolute', top: 3, left: config.enabled ? 21 : 3, width: 20, height: 20, borderRadius: '50%', background: '#fff', transition: 'left 0.2s', boxShadow: '0 2px 6px rgba(0,0,0,0.35)' }} />
             </div>
           </label>
         </div>
 
-        {/* VISTA PREVIA */}
-        <div
-          className="card"
-          style={{
-            padding: 0,
-            overflow: 'hidden',
-            marginBottom: 20,
-            boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
-          }}
-        >
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '12px 16px',
-              borderBottom: '1px solid var(--border)',
-              gap: 8,
-              flexWrap: 'wrap',
-            }}
-          >
-            <h3 style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted)', margin: 0 }}>
-              Vista Previa en Vivo
-            </h3>
-            <button
-              onClick={handleTest}
-              disabled={testing}
-              style={{
-                fontSize: 12,
-                padding: '10px 14px',
-                background: 'var(--border)',
-                borderRadius: 8,
-                opacity: testing ? 0.6 : 1,
-                minHeight: 40,
-                WebkitTapHighlightColor: 'transparent',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
-              }}
-            >
-              {testing ? 'Enviando...' : '🚀 Probar en Discord'}
-            </button>
-          </div>
-
-          <div style={{ padding: 12, background: 'rgba(0,0,0,0.25)' }}>
-            <div
-              style={{
-                background: '#313338',
-                borderRadius: 12,
-                padding: 12,
-                boxShadow: 'inset 0 1px 4px rgba(0,0,0,0.4)',
-              }}
-            >
-              <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-                <div
-                  style={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: '50%',
-                    background: getGuildIconUrl()
-                      ? 'transparent'
-                      : 'linear-gradient(135deg, #ff69b4, #ff85c2)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: 13,
-                    flexShrink: 0,
-                    overflow: 'hidden',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
-                  }}
-                >
-                  {getGuildIconUrl() ? (
-                    <img
-                      src={getGuildIconUrl()}
-                      alt=""
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                    />
-                  ) : (
-                    '🍒'
-                  )}
-                </div>
-                <div style={{ minWidth: 0, flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span
-                      style={{
-                        fontWeight: 700,
-                        color: '#fff',
-                        fontSize: 13,
-                        textShadow: '0 1px 3px rgba(0,0,0,0.4)',
-                      }}
-                    >
-                      Cherry
-                    </span>
-                    <span
-                      style={{
-                        background: '#5865f2',
-                        fontSize: 9,
-                        fontWeight: 700,
-                        padding: '2px 6px',
-                        borderRadius: 4,
-                        color: '#fff',
-                        boxShadow: '0 1px 4px rgba(88,101,242,0.5)',
-                      }}
-                    >
-                      BOT
-                    </span>
-                  </div>
-                  <p
-                    style={{
-                      fontSize: 13,
-                      color: '#e0e0e0',
-                      margin: '4px 0 0',
-                      wordBreak: 'break-word',
-                      textShadow: '0 1px 2px rgba(0,0,0,0.3)',
-                    }}
-                  >
-                    {formatPreviewText(config.message)}
-                  </p>
-
-                  {/* TARJETA ESTILO KOYA */}
-                  <div
-                    className={poppins.className}
-                    style={{
-                      position: 'relative',
-                      marginTop: 12,
-                      width: '100%',
-                      aspectRatio: '600 / 280',
-                      borderRadius: 10,
-                      overflow: 'hidden',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      textAlign: 'center',
-                      padding: 20,
-                      backgroundColor: config.bgColor,
-                      backgroundImage: config.bgImage ? `url(${config.bgImage})` : 'none',
-                      backgroundSize: 'cover',
-                      backgroundPosition: 'center',
-                      boxShadow:
-                        '0 12px 32px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.05)',
-                      border: '1px solid rgba(255,255,255,0.08)',
-                    }}
-                  >
-                    <div
-                      style={{
-                        position: 'absolute',
-                        inset: 0,
-                        background: `rgba(0,0,0,${config.overlayOpacity * 0.7})`,
-                      }}
-                    />
-                    <div
-                      style={{
-                        position: 'relative',
-                        zIndex: 10,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        maxWidth: '100%',
-                      }}
-                    >
-                      <img
-                        src={
-                          session?.user?.image ||
-                          'https://cdn.discordapp.com/embed/avatars/0.png'
-                        }
-                        alt="Avatar"
-                        style={{
-                          width: 'clamp(56px, 13vw, 84px)',
-                          height: 'clamp(56px, 13vw, 84px)',
-                          borderRadius: '50%',
-                          objectFit: 'cover',
-                          marginBottom: 10,
-                          border: `3px solid ${config.borderColor}`,
-                          background: '#2b2d31',
-                          boxShadow: `0 6px 20px rgba(0,0,0,0.5), 0 0 24px ${config.borderColor}40`,
-                        }}
-                      />
-                      <h4
-                        className={poppins.className}
-                        style={{
-                          fontSize: 'clamp(15px, 3.5vw, 24px)',
-                          fontWeight: 800,
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.06em',
-                          color: config.titleColor,
-                          margin: 0,
-                          lineHeight: 1.15,
-                          wordBreak: 'break-word',
-                          textShadow:
-                            '0 2px 4px rgba(0,0,0,0.7), 0 4px 12px rgba(0,0,0,0.5), 0 0 24px rgba(0,0,0,0.4)',
-                        }}
-                      >
-                        {formatPreviewText(config.cardTitle)}
-                      </h4>
-                      <p
-                        className={poppins.className}
-                        style={{
-                          fontSize: 'clamp(12px, 2.8vw, 17px)',
-                          fontWeight: 700,
-                          marginTop: 4,
-                          color: config.usernameColor,
-                          wordBreak: 'break-word',
-                          textShadow:
-                            '0 2px 4px rgba(0,0,0,0.7), 0 4px 10px rgba(0,0,0,0.45)',
-                        }}
-                      >
-                        {session?.user?.name || 'Usuario#0000'}
-                      </p>
-                      <p
-                        className={inter.className}
-                        style={{
-                          fontSize: 'clamp(10px, 2.4vw, 13px)',
-                          fontWeight: 500,
-                          marginTop: 6,
-                          color: config.subtitleColor,
-                          wordBreak: 'break-word',
-                          opacity: 0.95,
-                          textShadow:
-                            '0 1px 3px rgba(0,0,0,0.6), 0 2px 8px rgba(0,0,0,0.4)',
-                        }}
-                      >
-                        {formatPreviewText(config.cardSubtitle)}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* FORMULARIOS */}
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))',
-            gap: 16,
-          }}
-        >
-          <div className="card" style={{ boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
-            <h3
-              style={{
-                fontSize: 14,
-                fontWeight: 600,
-                marginBottom: 20,
-                textShadow: '0 1px 3px rgba(0,0,0,0.3)',
-              }}
-            >
-              💬 Canal y Mensajes
-            </h3>
-            <div className="form-group">
-              <label>Canal de Bienvenida</label>
-              <select
-                value={config.channelId}
-                onChange={(e) => setConfig({ ...config, channelId: e.target.value })}
-                style={{ fontSize: 16, boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.3)' }}
-              >
-                <option value="">Selecciona un canal...</option>
-                {channels.map((ch) => (
-                  <option key={ch.id} value={ch.id}>
-                    # {ch.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="form-group">
-              <label>Mensaje de texto</label>
-              <textarea
-                rows={2}
-                value={config.message}
-                onChange={(e) => setConfig({ ...config, message: e.target.value })}
-                style={{
-                  resize: 'none',
-                  fontSize: 16,
-                  boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.3)',
-                }}
-              />
-              <span
-                style={{
-                  fontSize: 11,
-                  color: 'var(--muted)',
-                  marginTop: 6,
-                  display: 'inline-block',
-                }}
-              >
-                Variables: {'{user}'}, {'{server}'}, {'{count}'}
-              </span>
-            </div>
-            <div className="form-group">
-              <label>Título en la imagen</label>
-              <input
-                type="text"
-                value={config.cardTitle}
-                onChange={(e) => setConfig({ ...config, cardTitle: e.target.value })}
-                style={{ fontSize: 16, boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.3)' }}
-              />
-            </div>
-            <div className="form-group" style={{ marginBottom: 0 }}>
-              <label>Subtítulo en la imagen</label>
-              <input
-                type="text"
-                value={config.cardSubtitle}
-                onChange={(e) => setConfig({ ...config, cardSubtitle: e.target.value })}
-                style={{ fontSize: 16, boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.3)' }}
-              />
-            </div>
-          </div>
-
-          <div className="card" style={{ boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
-            <h3
-              style={{
-                fontSize: 14,
-                fontWeight: 600,
-                marginBottom: 20,
-                textShadow: '0 1px 3px rgba(0,0,0,0.3)',
-              }}
-            >
-              🎨 Diseño de la Tarjeta
-            </h3>
-
-            {/* 🔽 IMAGEN DE FONDO — BASE64 SIN API */}
-            <div className="form-group">
-              <label>Imagen de Fondo</label>
-
-              <input
-                id="bgImageUpload"
-                type="file"
-                accept="image/png,image/jpeg,image/webp,image/gif"
-                onChange={(e) => {
-                  handleImageUpload(e.target.files?.[0]);
-                  e.target.value = '';
-                }}
-                style={{ display: 'none' }}
-              />
-
+        {/* QUICK TOGGLES for all avisos */}
+        <div className="card" style={{ marginBottom: 20, padding: 16 }}>
+          <h3 style={{ fontSize: 13, fontWeight: 600, color: 'var(--muted)', marginBottom: 12 }}>Activar / Desactivar avisos</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10 }}>
+            {AVISO_TYPES.map((t) => (
               <div
+                key={t.id}
+                onClick={() => setActiveType(t.id)}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   gap: 10,
-                  background: 'var(--bg)',
-                  border: '1px dashed var(--border)',
+                  padding: '10px 12px',
                   borderRadius: 10,
-                  padding: 10,
-                  boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.3)',
+                  background: activeType === t.id ? 'rgba(255,105,180,0.12)' : 'var(--bg)',
+                  border: `1px solid ${activeType === t.id ? 'var(--primary)' : 'var(--border)'}`,
+                  cursor: 'pointer',
                 }}
               >
-                <div
-                  style={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: 8,
-                    background: config.bgImage
-                      ? `url(${config.bgImage}) center/cover`
-                      : 'var(--border)',
-                    flexShrink: 0,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: 20,
-                    overflow: 'hidden',
-                  }}
-                >
-                  {!config.bgImage && '🖼️'}
-                </div>
-
+                <span>{t.icon}</span>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div
-                    style={{
-                      fontSize: 12,
-                      fontWeight: 600,
-                      color: 'var(--text)',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {config.bgImage ? 'Imagen cargada ✓' : 'Ninguna imagen'}
-                  </div>
-                  <div style={{ fontSize: 10, color: 'var(--muted)' }}>
-                    PNG, JPG, WEBP o GIF · máx 5MB
+                  <div style={{ fontSize: 13, fontWeight: 600 }}>{t.label}</div>
+                  <div style={{ fontSize: 11, color: configs[t.id]?.enabled ? 'var(--success)' : 'var(--muted)' }}>
+                    {configs[t.id]?.enabled ? 'ON' : 'OFF'}
                   </div>
                 </div>
-
-                <label
-                  htmlFor="bgImageUpload"
-                  style={{
-                    padding: '8px 12px',
-                    borderRadius: 8,
-                    background: 'var(--primary)',
-                    color: '#fff',
-                    fontSize: 12,
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    flexShrink: 0,
-                    WebkitTapHighlightColor: 'transparent',
-                    textShadow: '0 1px 2px rgba(0,0,0,0.3)',
+                <input
+                  type="checkbox"
+                  checked={!!configs[t.id]?.enabled}
+                  onChange={(e) => {
+                    e.stopPropagation();
+                    setConfigs((prev) => ({
+                      ...prev,
+                      [t.id]: { ...prev[t.id], enabled: e.target.checked },
+                    }));
                   }}
-                >
-                  Subir
-                </label>
+                  onClick={(e) => e.stopPropagation()}
+                  style={{ width: 18, height: 18, accentColor: 'var(--primary)' }}
+                />
+              </div>
+            ))}
+          </div>
+          <p style={{ fontSize: 11, color: 'var(--muted)', marginTop: 10 }}>
+            Cambia el switch de cada uno y guarda desde la sección correspondiente.
+          </p>
+        </div>
 
+        {/* PREVIEW / FORM */}
+        {activeType === 'entrada' && (
+          <div className="card" style={{ padding: 0, overflow: 'hidden', marginBottom: 20 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderBottom: '1px solid var(--border)' }}>
+              <h3 style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted)', margin: 0 }}>Vista Previa</h3>
+              <button onClick={handleTest} disabled={testing} style={{ fontSize: 12, padding: '8px 12px', background: 'var(--border)', borderRadius: 8, opacity: testing ? 0.6 : 1, border: 'none', color: 'var(--text)', cursor: 'pointer' }}>
+                {testing ? 'Enviando...' : '🚀 Probar'}
+              </button>
+            </div>
+            <div style={{ padding: 12, background: 'rgba(0,0,0,0.25)' }}>
+              <div style={{ background: '#313338', borderRadius: 12, padding: 12 }}>
+                <div style={{ fontSize: 13, color: '#dbdee1', marginBottom: 8 }}>{formatPreviewText(config.message)}</div>
+                <div style={{ background: config.bgColor || '#1e1f22', borderRadius: 8, padding: 16, textAlign: 'center', minHeight: 120, backgroundImage: config.bgImage ? `url(${config.bgImage})` : 'none', backgroundSize: 'cover', backgroundPosition: 'center', position: 'relative' }}>
+                  <div style={{ position: 'absolute', inset: 8, background: `rgba(0,0,0,${config.overlayOpacity ?? 0.55})`, borderRadius: 6 }} />
+                  <div style={{ position: 'relative', zIndex: 1 }}>
+                    <div className={poppins.className} style={{ fontSize: 18, fontWeight: 800, color: config.titleColor, textTransform: 'uppercase' }}>{formatPreviewText(config.cardTitle)}</div>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: config.usernameColor, marginTop: 4 }}>{session?.user?.name || 'Usuario'}</div>
+                    <div style={{ fontSize: 12, color: config.subtitleColor, marginTop: 4 }}>{formatPreviewText(config.cardSubtitle)}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeType !== 'entrada' && (
+          <div className="card" style={{ marginBottom: 20 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <h3 style={{ fontSize: 13, fontWeight: 600, color: 'var(--muted)' }}>Vista previa del mensaje</h3>
+              <button onClick={handleTest} disabled={testing} style={{ fontSize: 12, padding: '8px 12px', background: 'var(--border)', borderRadius: 8, border: 'none', color: 'var(--text)', cursor: 'pointer' }}>
+                {testing ? 'Enviando...' : '🚀 Probar'}
+              </button>
+            </div>
+            <div style={{ background: '#313338', borderRadius: 10, padding: 14, fontSize: 14, color: '#dbdee1' }}>
+              {formatPreviewText(config.message)}
+            </div>
+          </div>
+        )}
+
+        {/* FORM */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: 16 }}>
+          <div className="card">
+            <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 16 }}>⚙️ Configuración</h3>
+
+            <div className="form-group" style={{ marginBottom: 14 }}>
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 6, color: 'var(--muted)' }}>Canal</label>
+              <select
+                value={config.channelId || ''}
+                onChange={(e) => updateConfig('channelId', e.target.value)}
+                style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', fontSize: 14 }}
+              >
+                <option value="">Selecciona un canal</option>
+                {channels.map((c) => (
+                  <option key={c.id} value={c.id}>#{c.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group" style={{ marginBottom: 14 }}>
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 6, color: 'var(--muted)' }}>Mensaje</label>
+              <textarea
+                value={config.message || ''}
+                onChange={(e) => updateConfig('message', e.target.value)}
+                rows={3}
+                style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', fontSize: 14, resize: 'vertical' }}
+                placeholder="Usa {user}, {username}, {server}, {count}"
+              />
+              <p style={{ fontSize: 11, color: 'var(--muted)', marginTop: 6 }}>Placeholders: {'{user}'} {'{username}'} {'{server}'} {'{count}'}</p>
+            </div>
+          </div>
+
+          {activeType === 'entrada' && (
+            <div className="card">
+              <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 16 }}>🎨 Diseño de la Tarjeta</h3>
+
+              <div className="form-group" style={{ marginBottom: 14 }}>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 6, color: 'var(--muted)' }}>Título de la tarjeta</label>
+                <input
+                  type="text"
+                  value={config.cardTitle || ''}
+                  onChange={(e) => updateConfig('cardTitle', e.target.value)}
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', fontSize: 14 }}
+                />
+              </div>
+
+              <div className="form-group" style={{ marginBottom: 14 }}>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 6, color: 'var(--muted)' }}>Subtítulo</label>
+                <input
+                  type="text"
+                  value={config.cardSubtitle || ''}
+                  onChange={(e) => updateConfig('cardSubtitle', e.target.value)}
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', fontSize: 14 }}
+                />
+              </div>
+
+              <div className="form-group" style={{ marginBottom: 14 }}>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 6, color: 'var(--muted)' }}>Imagen de fondo</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleImageUpload(e.target.files?.[0])}
+                  style={{ width: '100%', fontSize: 13 }}
+                />
                 {config.bgImage && (
-                  <button
-                    type="button"
-                    onClick={() => setConfig({ ...config, bgImage: '' })}
-                    style={{
-                      padding: '8px 10px',
-                      borderRadius: 8,
-                      background: 'var(--border)',
-                      color: 'var(--text)',
-                      fontSize: 12,
-                      fontWeight: 600,
-                      flexShrink: 0,
-                      WebkitTapHighlightColor: 'transparent',
-                      minHeight: 36,
-                    }}
-                  >
-                    ✕
+                  <button onClick={() => updateConfig('bgImage', '')} style={{ marginTop: 8, fontSize: 12, background: 'var(--border)', border: 'none', color: 'var(--text)', padding: '6px 10px', borderRadius: 6, cursor: 'pointer' }}>
+                    Quitar imagen
                   </button>
                 )}
               </div>
-            </div>
 
-            <div className="form-group">
-              <div
-                style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}
-              >
-                <label style={{ marginBottom: 0 }}>Oscuridad del fondo</label>
-                <span
-                  style={{
-                    fontSize: 12,
-                    color: 'var(--primary)',
-                    fontWeight: 600,
-                    textShadow: '0 0 8px rgba(255,105,180,0.4)',
-                  }}
-                >
-                  {Math.round(config.overlayOpacity * 100)}%
-                </span>
-              </div>
-              <input
-                type="range"
-                min="0"
-                max="0.9"
-                step="0.05"
-                value={config.overlayOpacity}
-                onChange={(e) =>
-                  setConfig({ ...config, overlayOpacity: parseFloat(e.target.value) })
-                }
-                style={{ padding: 0, accentColor: 'var(--primary)', minHeight: 36 }}
-              />
-            </div>
-
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
-                gap: 12,
-              }}
-            >
-              {[
-                { label: 'Color de Fondo', key: 'bgColor' },
-                { label: 'Borde y Nombre', key: 'borderColor' },
-                { label: 'Color Título', key: 'titleColor' },
-                { label: 'Color Subtítulo', key: 'subtitleColor' },
-              ].map(({ label, key }) => (
-                <div key={key}>
-                  <label>{label}</label>
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 8,
-                      background: 'var(--bg)',
-                      padding: 6,
-                      borderRadius: 8,
-                      border: '1px solid var(--border)',
-                      minHeight: 44,
-                      boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.3)',
-                    }}
-                  >
-                    <input
-                      type="color"
-                      value={config[key]}
-                      onChange={(e) => {
-                        if (key === 'borderColor') {
-                          setConfig({
-                            ...config,
-                            borderColor: e.target.value,
-                            usernameColor: e.target.value,
-                          });
-                        } else {
-                          setConfig({ ...config, [key]: e.target.value });
-                        }
-                      }}
-                      style={{
-                        width: 32,
-                        height: 32,
-                        padding: 0,
-                        border: 'none',
-                        background: 'transparent',
-                        cursor: 'pointer',
-                        flexShrink: 0,
-                        WebkitTapHighlightColor: 'transparent',
-                        boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
-                        borderRadius: 6,
-                      }}
-                    />
-                    <span
-                      style={{
-                        fontSize: 10,
-                        fontFamily: 'monospace',
-                        color: 'var(--muted)',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      {config[key]}
-                    </span>
-                  </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <div>
+                  <label style={{ fontSize: 11, color: 'var(--muted)' }}>Color fondo</label>
+                  <input type="color" value={config.bgColor || '#1e1f22'} onChange={(e) => updateConfig('bgColor', e.target.value)} style={{ width: '100%', height: 36, border: 'none', background: 'transparent' }} />
                 </div>
-              ))}
+                <div>
+                  <label style={{ fontSize: 11, color: 'var(--muted)' }}>Borde avatar</label>
+                  <input type="color" value={config.borderColor || '#ff5c8a'} onChange={(e) => updateConfig('borderColor', e.target.value)} style={{ width: '100%', height: 36, border: 'none', background: 'transparent' }} />
+                </div>
+                <div>
+                  <label style={{ fontSize: 11, color: 'var(--muted)' }}>Color título</label>
+                  <input type="color" value={config.titleColor || '#ffffff'} onChange={(e) => updateConfig('titleColor', e.target.value)} style={{ width: '100%', height: 36, border: 'none', background: 'transparent' }} />
+                </div>
+                <div>
+                  <label style={{ fontSize: 11, color: 'var(--muted)' }}>Color usuario</label>
+                  <input type="color" value={config.usernameColor || '#ff5c8a'} onChange={(e) => updateConfig('usernameColor', e.target.value)} style={{ width: '100%', height: 36, border: 'none', background: 'transparent' }} />
+                </div>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 24 }}>
+        {/* SAVE */}
+        <div style={{ marginTop: 24, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
           <button
             onClick={handleSave}
             disabled={saving}
-            className="save-btn"
             style={{
-              width: '100%',
-              maxWidth: 320,
-              padding: '14px 28px',
+              background: 'var(--primary)',
+              color: '#fff',
+              border: 'none',
+              padding: '12px 24px',
               borderRadius: 10,
-              background: 'linear-gradient(135deg, var(--primary), var(--primary-hover))',
-              boxShadow:
-                '0 8px 24px rgba(255,105,180,0.3), 0 4px 12px rgba(255,105,180,0.2), inset 0 1px 0 rgba(255,255,255,0.2)',
-              fontSize: 14,
               fontWeight: 700,
-              opacity: saving ? 0.6 : 1,
-              minHeight: 48,
-              WebkitTapHighlightColor: 'transparent',
-              textShadow: '0 1px 2px rgba(0,0,0,0.3)',
+              fontSize: 14,
+              cursor: 'pointer',
+              opacity: saving ? 0.7 : 1,
+              boxShadow: '0 4px 14px rgba(255,105,180,0.35)',
             }}
           >
-            {saving ? 'Guardando...' : '💾 Guardar Cambios'}
+            {saving ? 'Guardando...' : '💾 Guardar configuración'}
           </button>
         </div>
       </main>
@@ -1078,55 +531,20 @@ export default function GuildDashboard() {
       <style jsx global>{`
         @media (min-width: 768px) {
           .cherry-sidebar {
-            position: sticky !important;
             transform: translateX(0) !important;
-            height: 100vh !important;
-            top: 0 !important;
           }
-          .cherry-sidebar button[aria-label='Cerrar menú'] {
-            display: none !important;
+          .cherry-main {
+            margin-left: 250px !important;
+            width: calc(100% - 250px) !important;
           }
           .mobile-topbar {
             display: none !important;
           }
-          .cherry-main {
-            padding: 32px !important;
-          }
-          .save-btn {
-            width: auto !important;
-          }
         }
         @media (max-width: 767px) {
-          .cherry-main {
-            padding: 16px !important;
-            padding-top: calc(16px + env(safe-area-inset-top)) !important;
-            padding-bottom: calc(20px + env(safe-area-inset-bottom)) !important;
-            padding-left: max(16px, env(safe-area-inset-left)) !important;
-            padding-right: max(16px, env(safe-area-inset-right)) !important;
-          }
-        }
-        @supports (-webkit-touch-callout: none) {
-          .cherry-sidebar {
-            height: -webkit-fill-available;
-          }
-        }
-        @media (max-width: 767px) {
-          input,
-          select,
-          textarea {
+          input, select, textarea {
             font-size: 16px !important;
           }
-          input[type='color'] {
-            font-size: initial !important;
-          }
-        }
-        * {
-          -webkit-overflow-scrolling: touch;
-        }
-        button,
-        a,
-        input[type='checkbox'] {
-          -webkit-tap-highlight-color: transparent;
         }
       `}</style>
     </div>
