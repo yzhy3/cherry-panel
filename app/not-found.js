@@ -40,7 +40,7 @@ export default function NotFound() {
         Página no encontrada
       </p>
       <p style={{ fontSize: 14, color: '#6b6b7b', maxWidth: 360, marginBottom: 32, lineHeight: 1.5 }}>
-        La ruta que buscas no existe o ha sido movida. Vuelve al inicio o al dashboard.
+        La ruta que buscas no existe o ha sido movida.
       </p>
 
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
@@ -71,7 +71,7 @@ export default function NotFound() {
             textDecoration: 'none',
           }}
         >
-          Dashboard
+          Gestionar servidores
         </Link>
       </div>
     </div>

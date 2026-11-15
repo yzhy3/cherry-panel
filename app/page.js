@@ -1,18 +1,52 @@
 'use client';
 
 import { useSession, signIn } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
 export default function Home() {
   const { data: session, status } = useSession();
-  const router = useRouter();
+  const [bot, setBot] = useState(null);
 
-  // Si ya está logueado, puede ir directo al dashboard
   useEffect(() => {
-    // No forzar redirect automático para que vea el home bonito
-  }, [status]);
+    // Intentamos cargar el avatar real del bot desde la API
+    fetch('/api/bot/api/bot')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data?.avatar) setBot(data);
+      })
+      .catch(() => {});
+  }, []);
+
+  const BotIcon = ({ size = 36 }) => (
+    <div
+      style={{
+        width: size,
+        height: size,
+        borderRadius: size > 40 ? 16 : 10,
+        background: bot?.avatar
+          ? 'transparent'
+          : 'linear-gradient(135deg, #ff69b4, #ff85c2)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: size * 0.5,
+        boxShadow: '0 4px 14px rgba(255,105,180,0.35)',
+        overflow: 'hidden',
+        flexShrink: 0,
+      }}
+    >
+      {bot?.avatar ? (
+        <img
+          src={bot.avatar}
+          alt={bot.username || 'Cherry'}
+          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+        />
+      ) : (
+        '🍒'
+      )}
+    </div>
+  );
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--text)' }}>
@@ -23,12 +57,12 @@ export default function Home() {
           top: 0,
           zIndex: 50,
           backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
           background: 'rgba(15,15,19,0.85)',
           borderBottom: '1px solid var(--border)',
         }}
       >
         <div
-          className="container"
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -39,22 +73,10 @@ export default function Home() {
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: 10,
-                background: 'linear-gradient(135deg, #ff69b4, #ff85c2)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 18,
-                boxShadow: '0 4px 14px rgba(255,105,180,0.35)',
-              }}
-            >
-              🍒
-            </div>
-            <span style={{ fontWeight: 800, fontSize: 18, letterSpacing: '-0.02em' }}>Cherry</span>
+            <BotIcon size={36} />
+            <span style={{ fontWeight: 800, fontSize: 18, letterSpacing: '-0.02em' }}>
+              {bot?.username || 'Cherry'}
+            </span>
           </div>
 
           <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
@@ -71,7 +93,7 @@ export default function Home() {
                   boxShadow: '0 4px 14px rgba(255,105,180,0.3)',
                 }}
               >
-                Ir al Dashboard
+                Gestionar servidores
               </Link>
             ) : (
               <button
@@ -104,6 +126,10 @@ export default function Home() {
         }}
       >
         <div style={{ maxWidth: 720, margin: '0 auto' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 24 }}>
+            <BotIcon size={80} />
+          </div>
+
           <div
             style={{
               display: 'inline-flex',
@@ -131,8 +157,8 @@ export default function Home() {
               letterSpacing: '-0.03em',
             }}
           >
-            El panel más bonito<br />
-            para gestionar tu bot
+            Gestiona tu servidor<br />
+            de forma fácil y bonita
           </h1>
 
           <p
@@ -144,7 +170,7 @@ export default function Home() {
             }}
           >
             Configura avisos de entrada, salida, bans, boosts y mucho más
-            desde un dashboard intuitivo inspirado en los mejores bots.
+            desde un panel intuitivo inspirado en los mejores bots.
           </p>
 
           <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
@@ -161,7 +187,7 @@ export default function Home() {
                   boxShadow: '0 6px 20px rgba(255,105,180,0.4)',
                 }}
               >
-                Abrir Dashboard →
+                Gestionar servidores →
               </Link>
             ) : (
               <button
@@ -187,14 +213,7 @@ export default function Home() {
 
       {/* FEATURES */}
       <section style={{ padding: '40px 16px 80px', maxWidth: 1100, margin: '0 auto' }}>
-        <h2
-          style={{
-            textAlign: 'center',
-            fontSize: 24,
-            fontWeight: 700,
-            marginBottom: 32,
-          }}
-        >
+        <h2 style={{ textAlign: 'center', fontSize: 24, fontWeight: 700, marginBottom: 32 }}>
           Todo lo que necesitas
         </h2>
 
@@ -213,14 +232,7 @@ export default function Home() {
             { icon: '🎨', title: 'Diseño personalizado', desc: 'Colores, fondos e imágenes a tu gusto, estilo Koya.' },
             { icon: '⚡', title: 'Fácil y rápido', desc: 'Configura todo desde el panel sin tocar comandos.' },
           ].map((f) => (
-            <div
-              key={f.title}
-              className="card"
-              style={{
-                padding: 20,
-                transition: 'border-color 0.2s, transform 0.2s',
-              }}
-            >
+            <div key={f.title} className="card" style={{ padding: 20 }}>
               <div style={{ fontSize: 28, marginBottom: 12 }}>{f.icon}</div>
               <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 6 }}>{f.title}</h3>
               <p style={{ fontSize: 13, color: 'var(--muted)', lineHeight: 1.5 }}>{f.desc}</p>
@@ -229,7 +241,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* FOOTER */}
       <footer
         style={{
           borderTop: '1px solid var(--border)',
@@ -239,7 +250,7 @@ export default function Home() {
           fontSize: 13,
         }}
       >
-        Cherry Bot 🍒 · Hecho con ❤️ para Discord
+        {bot?.username || 'Cherry'} · Hecho con ❤️ para Discord
       </footer>
     </div>
   );
