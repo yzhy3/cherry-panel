@@ -11,16 +11,15 @@ export default function DashboardPage() {
   const [guilds, setGuilds] = useState([]);
   const [loading, setLoading] = useState(true);
   const [checking, setChecking] = useState(null);
-  const [needInvite, setNeedInvite] = useState(null);
   const [debugError, setDebugError] = useState(null);
   const [bot, setBot] = useState(null);
 
-  const CLIENT_ID = process.env.NEXT_PUBLIC_DISCORD_CLIENT_ID || '';
+  const isSnowflake = (v) => typeof v === 'string' && /^[0-9]{17,20}$/.test(String(v).trim());
 
   useEffect(() => {
     fetch('/api/bot/api/bot')
       .then((r) => (r.ok ? r.json() : null))
-      .then((data) => { if (data?.avatar) setBot(data); })
+      .then((data) => { if (data) setBot(data); })
       .catch(() => {});
   }, []);
 
@@ -63,37 +62,62 @@ export default function DashboardPage() {
       .finally(() => setLoading(false));
   }, [session, status]);
 
-  const handleConfigure = async (guild) => {
-    setChecking(guild.id);
-    setNeedInvite(null);
-
-    try {
-      let res = await fetch(`/api/bot/api/guilds/${guild.id}/status`);
-      if (res.ok) {
-        const data = await res.json();
-        if (data.present) {
-          router.push(`/dashboard/${guild.id}`);
-          return;
-        }
-      }
-      res = await fetch(`/api/bot/api/guilds/${guild.id}/avisos`);
-      if (res.ok) {
-        router.push(`/dashboard/${guild.id}`);
-        return;
-      }
-      setNeedInvite(guild);
-    } catch {
-      setNeedInvite(guild);
-    } finally {
-      setChecking(null);
-    }
+  // Client ID para invitar: id del bot (Application ID) cuando el bot está online
+  const getClientId = () => {
+    if (isSnowflake(bot?.id)) return bot.id;
+    return null;
   };
 
   const getInviteUrl = (guildId) => {
+    const clientId = getClientId();
+    if (!clientId) return null;
     const perms = '8';
-    const clientId = CLIENT_ID || bot?.id || '';
-    if (!clientId) return 'https://discord.com/oauth2/authorize?scope=bot%20applications.commands';
-    return `https://discord.com/oauth2/authorize?client_id=${clientId}&permissions=${perms}&scope=bot%20applications.commands&guild_id=${guildId || ''}&disable_guild_select=${guildId ? 'true' : 'false'}`;
+    let url = `https://discord.com/oauth2/authorize?client_id=${clientId}&permissions=${perms}&scope=bot%20applications.commands`;
+    if (guildId && isSnowflake(String(guildId))) {
+      url += `&guild_id=${guildId}&disable_guild_select=true`;
+    }
+    return url;
+  };
+
+  const handleConfigure = async (guild) => {
+    setChecking(guild.id);
+
+    try {
+      // ¿Está el bot en este servidor?
+      let present = false;
+
+      let res = await fetch(`/api/bot/api/guilds/${guild.id}/status`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.present) present = true;
+      } else {
+        // Fallback
+        res = await fetch(`/api/bot/api/guilds/${guild.id}/avisos`);
+        if (res.ok) present = true;
+      }
+
+      if (present) {
+        // Ya está → entrar al panel
+        router.push(`/dashboard/${guild.id}`);
+        return;
+      }
+
+      // No está → abrir Discord para añadirlo (sin alertas)
+      const invite = getInviteUrl(guild.id);
+      if (invite) {
+        window.open(invite, '_blank', 'noopener,noreferrer');
+      } else {
+        // Bot offline y sin client id: intentar de todas formas con lo que haya
+        alert('El bot no está online ahora. Enciéndelo e inténtalo de nuevo, o añádelo manualmente desde el Developer Portal.');
+      }
+    } catch {
+      const invite = getInviteUrl(guild.id);
+      if (invite) {
+        window.open(invite, '_blank', 'noopener,noreferrer');
+      }
+    } finally {
+      setChecking(null);
+    }
   };
 
   const BotIcon = ({ size = 36 }) => (
@@ -201,98 +225,31 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {needInvite && (
-          <div
-            className="card"
-            style={{
-              marginBottom: 24,
-              border: '1px solid var(--primary)',
-              background: 'rgba(255,105,180,0.08)',
-            }}
-          >
-            <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-              {needInvite.icon ? (
-                <img
-                  src={`https://cdn.discordapp.com/icons/${needInvite.id}/${needInvite.icon}.png?size=64`}
-                  alt=""
-                  style={{ width: 48, height: 48, borderRadius: 12 }}
-                />
-              ) : (
-                <div
-                  style={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: 12,
-                    background: 'var(--border)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontWeight: 700,
-                  }}
-                >
-                  {needInvite.name?.[0]}
-                </div>
-              )}
-              <div style={{ flex: 1, minWidth: 200 }}>
-                <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>
-                  {bot?.username || 'Cherry'} no está en <strong>{needInvite.name}</strong>
-                </h3>
-                <p style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 14 }}>
-                  Invita el bot al servidor y vuelve a hacer clic en <strong>Configurar</strong>.
-                </p>
-                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                  <a
-                    href={getInviteUrl(needInvite.id)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                      background: 'var(--primary)',
-                      color: '#fff',
-                      padding: '10px 18px',
-                      borderRadius: 10,
-                      fontWeight: 700,
-                      fontSize: 14,
-                      display: 'inline-block',
-                    }}
-                  >
-                    ➕ Añadir bot al servidor
-                  </a>
-                  <button
-                    onClick={() => setNeedInvite(null)}
-                    className="btn-secondary"
-                    style={{ padding: '10px 16px', fontSize: 14 }}
-                  >
-                    Cerrar
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
         {guilds.length === 0 && !loading ? (
           <div className="card" style={{ textAlign: 'center', padding: 40 }}>
             <div style={{ fontSize: 40, marginBottom: 12 }}>🔍</div>
             <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>No hay servidores disponibles</h3>
             <p style={{ color: 'var(--muted)', fontSize: 14, maxWidth: 400, margin: '0 auto 20px' }}>
-              No tienes servidores con permisos de Administrador, o aún no has invitado al bot.
+              No tienes servidores con permisos de Administrador.
             </p>
-            <a
-              href={getInviteUrl('')}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                background: 'var(--primary)',
-                color: '#fff',
-                padding: '12px 22px',
-                borderRadius: 10,
-                fontWeight: 700,
-                fontSize: 14,
-                display: 'inline-block',
-              }}
-            >
-              Invitar bot a un servidor
-            </a>
+            {getInviteUrl('') && (
+              <a
+                href={getInviteUrl('')}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  background: 'var(--primary)',
+                  color: '#fff',
+                  padding: '12px 22px',
+                  borderRadius: 10,
+                  fontWeight: 700,
+                  fontSize: 14,
+                  display: 'inline-block',
+                }}
+              >
+                Invitar bot a un servidor
+              </a>
+            )}
           </div>
         ) : (
           <div
@@ -310,7 +267,6 @@ export default function DashboardPage() {
                 style={{
                   cursor: checking === g.id ? 'wait' : 'pointer',
                   opacity: checking === g.id ? 0.7 : 1,
-                  border: needInvite?.id === g.id ? '1px solid var(--primary)' : undefined,
                 }}
               >
                 {g.icon ? (
