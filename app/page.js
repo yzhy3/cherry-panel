@@ -1,128 +1,246 @@
 'use client';
 
-import { useSession, signIn, signOut } from 'next-auth/react';
-import { useEffect, useState } from 'react';
+import { useSession, signIn } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import Link from 'next/link';
 
 export default function Home() {
   const { data: session, status } = useSession();
-  const [guilds, setGuilds] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [debugError, setDebugError] = useState(null);
+  const router = useRouter();
 
+  // Si ya está logueado, puede ir directo al dashboard
   useEffect(() => {
-    if (status !== 'authenticated') return;
-
-    if (!session?.accessToken) {
-      setDebugError('Falta el accessToken en la sesión. Revisa los callbacks en route.js de NextAuth y vuelve a iniciar sesión.');
-      return;
-    }
-
-    setLoading(true);
-    setDebugError(null);
-
-    fetch('https://discord.com/api/users/@me/guilds', {
-      headers: { Authorization: `Bearer ${session.accessToken}` },
-    })
-      .then(async (r) => {
-        const data = await r.json();
-        if (!r.ok || !Array.isArray(data)) {
-          throw new Error(data?.message || `Error de Discord (${r.status})`);
-        }
-        // Filtrar servidores donde tienes ADMINISTRATOR (0x8) o MANAGE_GUILD (0x20)
-        const adminGuilds = data.filter(
-          (g) =>
-            (BigInt(g.permissions) & BigInt(0x8)) === BigInt(0x8) ||
-            (BigInt(g.permissions) & BigInt(0x20)) === BigInt(0x20)
-        );
-        setGuilds(adminGuilds);
-      })
-      .catch((err) => {
-        console.error(err);
-        setDebugError(err.message);
-      })
-      .finally(() => setLoading(false));
-  }, [session, status]);
-
-  if (status === 'loading') {
-    return (
-      <div className="container" style={{ textAlign: 'center', paddingTop: '20vh' }}>
-        <h1>🍒 Cherry</h1>
-        <p>Cargando...</p>
-      </div>
-    );
-  }
-
-  if (!session) {
-    return (
-      <div className="container" style={{ textAlign: 'center', paddingTop: '20vh' }}>
-        <h1 style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>🍒 Cherry</h1>
-        <p style={{ color: 'var(--muted)', marginBottom: '2rem' }}>
-          Panel de control del bot inspirado en MEE6
-        </p>
-        <button onClick={() => signIn('discord')} style={{ fontSize: '1.1rem', padding: '0.8rem 2rem' }}>
-          Iniciar sesión con Discord
-        </button>
-      </div>
-    );
-  }
+    // No forzar redirect automático para que vea el home bonito
+  }, [status]);
 
   return (
-    <div className="container">
-      <div className="header">
-        <div>
-          <h1>🍒 Cherry Dashboard</h1>
-          <p style={{ color: 'var(--muted)' }}>Hola, {session.user?.name}</p>
+    <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--text)' }}>
+      {/* NAV */}
+      <header
+        style={{
+          position: 'sticky',
+          top: 0,
+          zIndex: 50,
+          backdropFilter: 'blur(12px)',
+          background: 'rgba(15,15,19,0.85)',
+          borderBottom: '1px solid var(--border)',
+        }}
+      >
+        <div
+          className="container"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '14px 16px',
+            maxWidth: 1100,
+            margin: '0 auto',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 10,
+                background: 'linear-gradient(135deg, #ff69b4, #ff85c2)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 18,
+                boxShadow: '0 4px 14px rgba(255,105,180,0.35)',
+              }}
+            >
+              🍒
+            </div>
+            <span style={{ fontWeight: 800, fontSize: 18, letterSpacing: '-0.02em' }}>Cherry</span>
+          </div>
+
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+            {status === 'authenticated' ? (
+              <Link
+                href="/dashboard"
+                style={{
+                  background: 'var(--primary)',
+                  color: '#fff',
+                  padding: '10px 18px',
+                  borderRadius: 10,
+                  fontWeight: 700,
+                  fontSize: 14,
+                  boxShadow: '0 4px 14px rgba(255,105,180,0.3)',
+                }}
+              >
+                Ir al Dashboard
+              </Link>
+            ) : (
+              <button
+                onClick={() => signIn('discord', { callbackUrl: '/dashboard' })}
+                style={{
+                  background: 'var(--primary)',
+                  color: '#fff',
+                  border: 'none',
+                  padding: '10px 18px',
+                  borderRadius: 10,
+                  fontWeight: 700,
+                  fontSize: 14,
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 14px rgba(255,105,180,0.3)',
+                }}
+              >
+                Iniciar sesión
+              </button>
+            )}
+          </div>
         </div>
-        <button className="btn-secondary" onClick={() => signOut()}>
-          Cerrar sesión
-        </button>
-      </div>
+      </header>
 
-      <h2 style={{ marginBottom: '1rem' }}>Tus servidores</h2>
+      {/* HERO */}
+      <section
+        style={{
+          padding: '80px 16px 60px',
+          textAlign: 'center',
+          background: 'radial-gradient(ellipse 80% 50% at 50% -20%, rgba(255,105,180,0.18), transparent)',
+        }}
+      >
+        <div style={{ maxWidth: 720, margin: '0 auto' }}>
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              background: 'rgba(255,105,180,0.12)',
+              border: '1px solid rgba(255,105,180,0.25)',
+              borderRadius: 999,
+              padding: '6px 14px',
+              fontSize: 13,
+              fontWeight: 600,
+              color: 'var(--primary)',
+              marginBottom: 24,
+            }}
+          >
+            ✨ Bot multipropósito para Discord
+          </div>
 
-      {debugError && (
-        <div className="card" style={{ border: '1px solid #ff4d4f', marginBottom: '1rem' }}>
-          <p style={{ color: '#ff4d4f', fontWeight: 600 }}>⚠️ Diagnóstico:</p>
-          <p style={{ marginTop: '0.5rem' }}>{debugError}</p>
-        </div>
-      )}
+          <h1
+            style={{
+              fontSize: 'clamp(32px, 6vw, 48px)',
+              fontWeight: 800,
+              lineHeight: 1.15,
+              marginBottom: 16,
+              letterSpacing: '-0.03em',
+            }}
+          >
+            El panel más bonito<br />
+            para gestionar tu bot
+          </h1>
 
-      {loading ? (
-        <p>Cargando servidores...</p>
-      ) : guilds.length === 0 ? (
-        <div className="card">
-          <p>No tienes servidores con permisos de administrador, o el bot no está en ellos.</p>
-          <p style={{ marginTop: '1rem', color: 'var(--muted)' }}>
-            Invita el bot a tu servidor y asegúrate de tener el permiso <strong>Administrador</strong>.
+          <p
+            style={{
+              fontSize: 'clamp(15px, 2.5vw, 18px)',
+              color: 'var(--muted)',
+              marginBottom: 32,
+              lineHeight: 1.6,
+            }}
+          >
+            Configura avisos de entrada, salida, bans, boosts y mucho más
+            desde un dashboard intuitivo inspirado en los mejores bots.
           </p>
+
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+            {status === 'authenticated' ? (
+              <Link
+                href="/dashboard"
+                style={{
+                  background: 'var(--primary)',
+                  color: '#fff',
+                  padding: '14px 28px',
+                  borderRadius: 12,
+                  fontWeight: 700,
+                  fontSize: 16,
+                  boxShadow: '0 6px 20px rgba(255,105,180,0.4)',
+                }}
+              >
+                Abrir Dashboard →
+              </Link>
+            ) : (
+              <button
+                onClick={() => signIn('discord', { callbackUrl: '/dashboard' })}
+                style={{
+                  background: 'var(--primary)',
+                  color: '#fff',
+                  border: 'none',
+                  padding: '14px 28px',
+                  borderRadius: 12,
+                  fontWeight: 700,
+                  fontSize: 16,
+                  cursor: 'pointer',
+                  boxShadow: '0 6px 20px rgba(255,105,180,0.4)',
+                }}
+              >
+                Iniciar sesión con Discord
+              </button>
+            )}
+          </div>
         </div>
-      ) : (
-        <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}>
-          {guilds.map((g) => (
-            <Link key={g.id} href={`/dashboard/${g.id}`} className="guild-card">
-              {g.icon ? (
-                <img
-                  className="guild-icon"
-                  src={`https://cdn.discordapp.com/icons/${g.id}/${g.icon}.png?size=128`}
-                  alt=""
-                />
-              ) : (
-                <div
-                  className="guild-icon"
-                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}
-                >
-                  {g.name[0]}
-                </div>
-              )}
-              <div>
-                <div style={{ fontWeight: 600 }}>{g.name}</div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>Configurar →</div>
-              </div>
-            </Link>
+      </section>
+
+      {/* FEATURES */}
+      <section style={{ padding: '40px 16px 80px', maxWidth: 1100, margin: '0 auto' }}>
+        <h2
+          style={{
+            textAlign: 'center',
+            fontSize: 24,
+            fontWeight: 700,
+            marginBottom: 32,
+          }}
+        >
+          Todo lo que necesitas
+        </h2>
+
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+            gap: 16,
+          }}
+        >
+          {[
+            { icon: '👋', title: 'Avisos de Entrada', desc: 'Tarjetas personalizadas cuando alguien se une a tu servidor.' },
+            { icon: '🚪', title: 'Avisos de Salida', desc: 'Notifica cuando un miembro abandona el servidor.' },
+            { icon: '🔨', title: 'Avisos de Ban', desc: 'Mantén un registro visible de los bans aplicados.' },
+            { icon: '🚀', title: 'Avisos de Boost', desc: 'Agradece automáticamente a quien impulse el servidor.' },
+            { icon: '🎨', title: 'Diseño personalizado', desc: 'Colores, fondos e imágenes a tu gusto, estilo Koya.' },
+            { icon: '⚡', title: 'Fácil y rápido', desc: 'Configura todo desde el panel sin tocar comandos.' },
+          ].map((f) => (
+            <div
+              key={f.title}
+              className="card"
+              style={{
+                padding: 20,
+                transition: 'border-color 0.2s, transform 0.2s',
+              }}
+            >
+              <div style={{ fontSize: 28, marginBottom: 12 }}>{f.icon}</div>
+              <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 6 }}>{f.title}</h3>
+              <p style={{ fontSize: 13, color: 'var(--muted)', lineHeight: 1.5 }}>{f.desc}</p>
+            </div>
           ))}
         </div>
-      )}
+      </section>
+
+      {/* FOOTER */}
+      <footer
+        style={{
+          borderTop: '1px solid var(--border)',
+          padding: '24px 16px',
+          textAlign: 'center',
+          color: 'var(--muted)',
+          fontSize: 13,
+        }}
+      >
+        Cherry Bot 🍒 · Hecho con ❤️ para Discord
+      </footer>
     </div>
   );
 }
