@@ -98,19 +98,29 @@ export default function DashboardPage() {
 
     try {
       // ¿Está el bot en este servidor?
+      // Probamos varios endpoints (el de welcome es el original y suele estar desplegado)
       let present = false;
+      const checks = [
+        `/api/bot/api/guilds/${guild.id}/status`,
+        `/api/bot/api/guilds/${guild.id}/welcome`,
+        `/api/bot/api/guilds/${guild.id}/avisos`,
+      ];
 
-      try {
-        let res = await fetch(`/api/bot/api/guilds/${guild.id}/status`);
-        if (res.ok) {
-          const data = await res.json();
-          if (data.present) present = true;
-        } else {
-          res = await fetch(`/api/bot/api/guilds/${guild.id}/avisos`);
-          if (res.ok) present = true;
+      for (const url of checks) {
+        try {
+          const res = await fetch(url);
+          if (!res.ok) continue;
+          const data = await res.json().catch(() => ({}));
+          // status devuelve { present: true/false }
+          if (data.present === false) continue;
+          // welcome / avisos / status con present true o con config/channels
+          if (data.present === true || data.config || data.channels || data.guildName) {
+            present = true;
+            break;
+          }
+        } catch {
+          // seguir con el siguiente
         }
-      } catch {
-        // API no alcanzable → tratamos como no presente
       }
 
       if (present) {
@@ -118,12 +128,11 @@ export default function DashboardPage() {
         return;
       }
 
-      // No está → abrir Discord para añadirlo (sin alertas)
+      // No está → abrir Discord para añadirlo
       const invite = getInviteUrl(guild.id);
       if (invite) {
         window.open(invite, '_blank', 'noopener,noreferrer');
       }
-      // Si no hay clientId, no hacemos nada ruidoso; el usuario puede añadir el bot manualmente
     } finally {
       setChecking(null);
     }
